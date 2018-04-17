@@ -6,13 +6,15 @@ using namespace cv;
 
 int main(int argc, char *argv[])
 {
-    Mat srcImage = imread("../blur.jpg"); // 载入图像
+    Mat srcImage = imread("../canny.jpg"); // 载入图像
     imshow("原始图", srcImage); // 显示图像
 
-    // 均值滤波操作
-    Mat dstImage;
-    blur(srcImage, dstImage, Size (7, 7)); // 腐蚀操作函数
-    imshow("效果图---均值滤波", dstImage);
+    Mat edge, grayImage; // 参数定义
+    cvtColor(srcImage, grayImage, CV_RGB2GRAY); // RGB转灰度图
+    blur(grayImage, edge, Size(3, 3)); // 模糊操作---均值滤波操作
+    Canny(edge, edge, 3, 9, 3); // Canny边界检测
+
+    imshow("效果图---边缘检测", edge);
 
     waitKey(0); // 等待按键按下
 
