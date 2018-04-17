@@ -1,23 +1,26 @@
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui/highgui.hpp> // highgui模块头文件
-#include <opencv2/imgproc/imgproc.hpp> // 图像处理函数头文件
-
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <stdio.h>
 using namespace cv;
 
 int main(int argc, char *argv[])
 {
-    Mat srcImage = imread("../canny.jpg"); // 载入图像
-    imshow("原始图", srcImage); // 显示图像
+    VideoCapture capture(0);
 
-    Mat edge, grayImage; // 参数定义
-    cvtColor(srcImage, grayImage, CV_RGB2GRAY); // RGB转灰度图
-    blur(grayImage, edge, Size(3, 3)); // 模糊操作---均值滤波操作
-    Canny(edge, edge, 3, 9, 3); // Canny边界检测
+    Mat frame;
 
-    imshow("效果图---边缘检测", edge);
-
-    waitKey(0); // 等待按键按下
+    while (1)
+    {
+        capture >> frame;
+        if (frame.empty()) {
+            break;
+        }
+        imshow("摄像头", frame);
+        if (waitKey(20) == 27)//27是键盘摁下esc时，计算机接收到的ascii码值
+        {
+            break;
+        }
+    }
 
     return 0;
 }
-
