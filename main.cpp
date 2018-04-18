@@ -1,24 +1,46 @@
-#include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 using namespace cv;
+using namespace std;
 
-int main(){
-
-    Mat image1, image2, image3;
-
-    // 如果输入标志有冲突，则按较小的数字为准, 并且也会随着标志的不同
-    // 图像的大小会减小
-    //                            输入标志
-    image1 = imread("../show.jpg", 2 | 4); // 载入无损图像
-    imshow("Picture1", image1);
-
-    image2 = imread("../show.jpg", 0); // 载入灰度图像
-    imshow("Picture2", image2);
-
-    image3 = imread("../show.jpg", 199); // 载入3通道的彩色图像, 图像减小为1/8
-    imshow("Picture3", image3);
-
-    waitKey(0);
-
-    return 0;
+static void createAlphaMat(Mat &mat)
+{
+    CV_Assert(mat.channels() == 4);
+    for (int i = 0; i < mat.rows; ++i)
+    {
+        for (int j = 0; j < mat.cols; ++j)
+        {
+            Vec4b& bgra = mat.at<Vec4b>(i, j);
+            bgra[0] = UCHAR_MAX; // Blue
+            bgra[1] = saturate_cast<uchar>((float (mat.cols - j)) / ((float)mat.cols) * UCHAR_MAX); // Green
+            bgra[2] = saturate_cast<uchar>((float (mat.rows - i)) / ((float)mat.rows) * UCHAR_MAX); // Red
+            bgra[3] = saturate_cast<uchar>(0.5 * (bgra[1] + bgra[2])); // Alpha
+        }
+    }
 }
+
+int main()
+{
+    // Create mat with alpha channel
+    Mat mat(480, 640, CV_8UC4);
+    createAlphaMat(mat);
+    vector<int> compression_params;
+    compression_params.push_back(IMWRITE_PNG_COMPRESSION);
+    compression_params.push_back(9);
+
+    bool result = false;
+    try
+    {
+        result = imwrite("../alpha.png", mat, compression_params);
+    }
+    catch (const cv::Exception& ex)
+    {
+        fprintf(stderr, "Exception converting image to PNG format: %s\n", ex.what());
+    }
+    if (result)
+        printf("Saved PNG file with alpha data.\n");
+    else
+        printf("ERROR: Can't save PNG file.\n");
+    return result ? 0 : 1;
+}
+
