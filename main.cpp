@@ -4,30 +4,21 @@ using namespace cv;
 
 int main(){
 
-    VideoCapture capture("demo.avi");
+    Mat image1, image2, image3;
 
-    while (true) {
-        Mat frame;
-        Mat edge;
-        capture >> frame;
+    // 如果输入标志有冲突，则按较小的数字为准, 并且也会随着标志的不同
+    // 图像的大小会减小
+    //                            输入标志
+    image1 = imread("../show.jpg", 2 | 4); // 载入无损图像
+    imshow("Picture1", image1);
 
-        if (frame.empty())
-            break;
+    image2 = imread("../show.jpg", 0); // 载入灰度图像
+    imshow("Picture2", image2);
 
-        cvtColor(frame, edge, COLOR_BGR2GRAY);
+    image3 = imread("../show.jpg", 199); // 载入3通道的彩色图像, 图像减小为1/8
+    imshow("Picture3", image3);
 
-        blur(edge, edge, Size(7,7));
-
-        Canny(edge, edge, 10, 30);
-
-        imshow("Video", frame);
-        imshow("After canny", edge);
-
-        //等待50ms，如果从键盘输入的是q、Q、或者是Esc键，则退出
-        int key = waitKey(50);
-        if (key == 'q' || key == 'Q' || key == 27)
-            break;
-    }
+    waitKey(0);
 
     return 0;
 }
