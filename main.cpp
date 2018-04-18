@@ -38,6 +38,35 @@ int main()
     Mat RowClone = C.row(1).clone();
     cout << "RowClone = " << endl << " " << RowClone << endl;
 
+    cout << "格式化输出方法：" << endl;
+    Mat r = Mat(10, 3, CV_8UC3);
+    randn(r, Scalar::all(0), Scalar::all(255)); // 随机产生值填充矩阵, 下限(最小值)，上限(最大值)
+
+    cout << "OpenCV[默认风格] = " << r << ";" << endl << endl;
+    cout << "OpenCV[Python风格] = " << format(r, Formatter::FMT_PYTHON) << ";" << endl << endl;
+    cout << "OpenCV[逗号分隔风格] = " << format(r, Formatter::FMT_CSV) << ";" << endl << endl;
+    cout << "OpenCV[NUMPY风格] = " << format(r, Formatter::FMT_NUMPY) << ";" << endl << endl;
+    cout << "OpenCV[C语言风格] = " << format(r, Formatter::FMT_C) << ";" << endl << endl;
+
+    cout << "其它数据结构的输出格式:" << endl;
+    Point2f p(6, 2);
+    cout << "[二维点]p = " << p << ";\n" << endl;
+
+    Point3f p3f(8, 2, 0);
+    cout << "[三维点]p3f = " << p3f << ";\n" << endl;
+
+    vector<float> v;
+    v.push_back(3);
+    v.push_back(5);
+    v.push_back(7);
+    cout << "[基于Mat的vector]v = " << Mat(v) << endl;
+
+    vector<Point2f> points(20);
+    for (size_t i = 0; i < points.size(); ++i) {
+        points[i] = Point2f((float)(i * 5), (float)(i % 7));
+    }
+    cout << "[二位点向量]points = " << points << endl;
+
     return 0;
 }
 
