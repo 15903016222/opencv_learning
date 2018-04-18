@@ -22,9 +22,12 @@ static void createAlphaMat(Mat &mat)
 int main()
 {
     // Create mat with alpha channel
+    // 4通道，每个通道的数据类型8bit的uchar类型
     Mat mat(480, 640, CV_8UC4);
     createAlphaMat(mat);
     vector<int> compression_params;
+    // png格式的压缩
+    // 压缩等级
     compression_params.push_back(IMWRITE_PNG_COMPRESSION);
     compression_params.push_back(9);
 
