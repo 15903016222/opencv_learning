@@ -13,7 +13,7 @@ using namespace cv;
 
 /// Global Variables
 const int NUMBER = 100;
-const int DELAY = 5```;
+const int DELAY = 5;
 
 const int window_width = 900;
 const int window_height = 600;
