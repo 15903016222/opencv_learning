@@ -19,7 +19,8 @@ bool MultiChannelBlending () {
     // 分离图像通道
     // 第一个参数：需要进行分离的多通道数组Mat
     // 第二个参数：需要输出的数组或者vector容器
-    split(srcImage, channels);
+    split(srcImage, channels); // 分离彩色通道
+    // 取图像的每个通道的分量
     imageBlueChannel  = channels.at(0);
     imageGreenChannel = channels.at(1);
     imageRedChannel   = channels.at(2);
@@ -42,7 +43,7 @@ bool MultiChannelBlending () {
 
     // Green 通道混合
     addWeighted(imageROIGreen, 1.0, logoImage, 0.5, 0.0, imageROIGreen);
-    merge(channels, srcImage);
+    merge(channels, srcImage); // 将三个独立的独立的通道合并成一个三通道图像
     namedWindow("Green通道混合【效果图】");
     imshow("Green通道混合【效果图】", srcImage);
 
