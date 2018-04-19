@@ -79,11 +79,39 @@ bool linearBlending() {
     return true;
 }
 
+// --------------[ROI_LinearBlending()]--------
+// 函数名：ROI_LinearBlending()
+// 描述：区域线性混合操作
+// --------------------------------------------
+bool ROI_LinearBlending () {
+    // 读入2张图像
+    Mat srcImage1 = imread("../dota_pa.jpg", 1);
+    Mat srcImage2 = imread("../dota_logo.jpg");
+
+    // 定义感兴趣区域---两种方法
+    Mat imageROI;
+    // 方法一
+    imageROI = srcImage1(Rect(200, 250, srcImage2.cols, srcImage2.rows));
+    // 方法二
+    imageROI = srcImage1(Range(250, 250 + srcImage2.rows), Range(200, 200 + srcImage2.cols));
+
+    // 区域线性混合操作 将logo添加到原图上
+    addWeighted(imageROI, 0.5, srcImage2, 0.3, 0.0, imageROI);
+
+    // 显示原图和效果图
+    namedWindow("区域线性混合【效果图】");
+    imshow("区域线性混合【效果图】", srcImage1);
+
+    return true;
+}
+
 int main (int argc, char *argv[]) {
 
     ROI_addImage();
 
     linearBlending();
+
+    ROI_LinearBlending();
 
     waitKey(0);
 
