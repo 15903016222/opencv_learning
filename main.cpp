@@ -1,70 +1,76 @@
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 
 using namespace cv;
 using namespace std;
 
-int g_nContrastValue;
-int g_nBrightValue;
-Mat g_srcImage, g_dstImage;
-
-// 轨迹条位置改变的调用的函数
-void on_ContrastAndBright (int , void *) {
-    namedWindow("原始窗口", 1);
-
-    for (int y = 0; y < g_srcImage.rows; ++y) {
-        for (int x = 0; x < g_srcImage.cols; ++x) {
-            for (int c = 0; c < 3; ++c) {
-                g_dstImage.at<Vec3b>(y, x)[c] =
-                        saturate_cast<uchar>((g_nContrastValue * 0.01) * (g_srcImage.at<Vec3b>(y, x)[c]) + g_nBrightValue);
-            }
-        }
-    }
-
-    // 显示图像
-    imshow("原始窗口", g_srcImage);
-    imshow("效果窗口", g_dstImage);
-}
-
 int main (int argc, char *argv[]) {
-    // 读取图像
-    g_srcImage = imread ("../bright.jpg");
-    if (!g_srcImage.data) {
-        cout << "读取原始图像失败" << endl;
+    // 以灰度的方式读取图像
+    Mat srcImage = imread("../dft.jpg", 0);
+    if (!srcImage.data) {
+        cout << "读取图像失败" << endl;
         return -1;
     }
-    g_dstImage = Mat::zeros(g_srcImage.size(), g_srcImage.type());
+    imshow("原始图", srcImage);
 
-    // 设置对比度，亮度值
-    g_nBrightValue = 80;
-    g_nContrastValue = 80;
+    // 讲输入的图像扩展到最佳尺寸
+    int m = getOptimalDFTSize(srcImage.rows);
+    int n = getOptimalDFTSize(srcImage.cols);
 
-    // 创建窗口
-    // 第一个参数：窗口的名字
-    // 第二个参数：1表示窗口大小无法改变调整
-    //           0表示窗口可以改变调整
-    namedWindow("效果窗口", 1);
+    // 为傅立叶变幻分配空间
+    Mat padded;
+    copyMakeBorder(srcImage,
+                   padded,
+                   0,
+                   m - srcImage.rows,
+                   0,
+                   n - srcImage.cols,
+                   BORDER_CONSTANT, Scalar::all(0));
 
-    // 床架轨迹条
-    // 第一个参数：轨迹条的名字
-    // 第二个参数：轨迹条依附的窗口名字
-    // 第三个参数：表示滑块的位置，创建时，滑块的初始位置就是该变量的值，当滑块的位置改变时，这个值也会改变
-    // 第四个参数：滑块可以达到最大位置的值，最小值始终是0
-    // 第五个参数：回调函数 默认值0
-    // 第六个参数：void *默认值0 回调函数的需要的参数
-    createTrackbar("对比度", "效果窗口", &g_nContrastValue, 300, on_ContrastAndBright);
-    createTrackbar("亮  度", "效果窗口", &g_nBrightValue, 200, on_ContrastAndBright);
+    // 进行就地傅立叶变幻
+    Mat planes[] = {Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F)};
+    Mat complexI;
+    merge(planes, 2, complexI);
+    dft(complexI, complexI);
 
-    // 回调函数初始化 结果在回调函数中显示
-    // 这个函数必须初始化，否则回调函数就不会执行
-    on_ContrastAndBright (g_nContrastValue, NULL);
-    on_ContrastAndBright (g_nBrightValue, NULL);
+    // 将复数变换为幅值 M^2 = 实部^2 + 虚步^2
+    split(complexI, planes);
+    //        输入实部    输入虚部     输出幅度
+    magnitude(planes[0], planes[1], planes[0]);
+    Mat magnitudeImage = planes[0];
 
-    while ('q' != char (waitKey(1))) {
-        ;
-    }
+    // 进行对数尺寸的缩放 求自然对数 M1 = log(1 + M)
+    magnitudeImage += Scalar::all(1);
+    log(magnitudeImage, magnitudeImage);
+
+    // 剪切和重分布幅度象限
+    // 若有奇数行 和 奇数列，进行频谱裁剪
+    magnitudeImage = magnitudeImage(Rect(0, 0, magnitudeImage.cols & -2, magnitudeImage.rows & -2));
+    // 重新排列傅立叶图像中的象限，使得原点位于图像中心
+    int cx = magnitudeImage.cols / 2;
+    int cy = magnitudeImage.rows / 2;
+    Mat q0(magnitudeImage, Rect(0, 0, cx, cy));
+    Mat q1(magnitudeImage, Rect(cx, 0, cx, cy));
+    Mat q2(magnitudeImage, Rect(0, cy, cx, cy));
+    Mat q3(magnitudeImage, Rect(cx, cy, cx, cy));
+
+    // 交换象限
+    Mat tmp;
+    q0.copyTo(tmp);
+    q3.copyTo(q0);
+    tmp.copyTo(q3);
+    q1.copyTo(tmp);
+    q2.copyTo(q1);
+    tmp.copyTo(q1);
+
+    // 归一化 用0-1之间的浮点值将矩阵变幻为可视的图像格式
+    normalize(magnitudeImage, magnitudeImage, 0, 1, NORM_MINMAX);
+
+    // 显示图片
+    imshow("效果图",magnitudeImage);
+    waitKey(0);
 
     return 0;
 }
