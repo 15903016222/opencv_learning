@@ -42,6 +42,9 @@ int main (int argc, char *argv[]) {
     g_nContrastValue = 80;
 
     // 创建窗口
+    // 第一个参数：窗口的名字
+    // 第二个参数：1表示窗口大小无法改变调整
+    //           0表示窗口可以改变调整
     namedWindow("效果窗口", 1);
 
     // 床架轨迹条
