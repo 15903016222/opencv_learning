@@ -1,3 +1,4 @@
+#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -7,70 +8,80 @@ using namespace cv;
 using namespace std;
 
 int main (int argc, char *argv[]) {
-    // 以灰度的方式读取图像
-    Mat srcImage = imread("../dft.jpg", 0);
-    if (!srcImage.data) {
-        cout << "读取图像失败" << endl;
-        return -1;
+    /* -------------写文件----------- */
+    // 初始化
+    FileStorage fs("../test.yaml", FileStorage::WRITE);
+
+    // 开始写入文件
+    fs << "frameCount" << 5;
+    time_t rawtime;
+    time(&rawtime);
+    fs << "calibrationDate" << asctime(localtime(&rawtime));
+    Mat camerMatrix = (Mat_<double>(3, 3) << 1000, 0, 320, 0, 1000, 240, 0, 0, 1);
+    Mat distCoeffs = (Mat_<double>(5, 1) << 0.1, 0.01, -0.001, 0, 0);
+    fs << "camerMatrix" << camerMatrix << "distCoeffs" << distCoeffs;
+    fs << "features" << "[";
+    for (int i = 0; i < 3; ++i) {
+        int x = rand () % 640;
+        int y = rand () % 480;
+        uchar lbp = rand () % 256;
+
+        fs << "{:" << "x" << x << "y" << y << "lbp" << "[:";
+        for (int j = 0; j < 8; ++j) {
+            fs << ((lbp >> j) & 1);
+        }
+        fs << "]" << "}";
     }
-    imshow("原始图", srcImage);
+    fs << "]";
 
-    // 讲输入的图像扩展到最佳尺寸
-    int m = getOptimalDFTSize(srcImage.rows);
-    int n = getOptimalDFTSize(srcImage.cols);
+    // 释放文件
+    fs.release();
 
-    // 为傅立叶变幻分配空间
-    Mat padded;
-    copyMakeBorder(srcImage,
-                   padded,
-                   0,
-                   m - srcImage.rows,
-                   0,
-                   n - srcImage.cols,
-                   BORDER_CONSTANT, Scalar::all(0));
+    /* -----------------读文件------------- */
+    // 初始化
+    FileStorage fs2("../test.yaml", FileStorage::READ);
 
-    // 进行就地傅立叶变幻
-    Mat planes[] = {Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F)};
-    Mat complexI;
-    merge(planes, 2, complexI);
-    dft(complexI, complexI);
+    // 第一种方法读文件，对fileNode操作
+    int frameCount = (int)fs2["frameCount"];
+    cout << "frameCount : " << frameCount << endl;
 
-    // 将复数变换为幅值 M^2 = 实部^2 + 虚步^2
-    split(complexI, planes);
-    //        输入实部    输入虚部     输出幅度
-    magnitude(planes[0], planes[1], planes[0]);
-    Mat magnitudeImage = planes[0];
+    string data;
+    // 第二种方法，使用FileNode >> 运算符
+    fs2["calibrationDate"] >> data;
+    cout << "clibrationDate : " << data;
 
-    // 进行对数尺寸的缩放 求自然对数 M1 = log(1 + M)
-    magnitudeImage += Scalar::all(1);
-    log(magnitudeImage, magnitudeImage);
+    Mat camerMatrix2, distCoeffs2;
+    fs2["camerMatrix"] >> camerMatrix2;
+    fs2["distCoeffs"] >> distCoeffs2;
 
-    // 剪切和重分布幅度象限
-    // 若有奇数行 和 奇数列，进行频谱裁剪
-    magnitudeImage = magnitudeImage(Rect(0, 0, magnitudeImage.cols & -2, magnitudeImage.rows & -2));
-    // 重新排列傅立叶图像中的象限，使得原点位于图像中心
-    int cx = magnitudeImage.cols / 2;
-    int cy = magnitudeImage.rows / 2;
-    Mat q0(magnitudeImage, Rect(0, 0, cx, cy));
-    Mat q1(magnitudeImage, Rect(cx, 0, cx, cy));
-    Mat q2(magnitudeImage, Rect(0, cy, cx, cy));
-    Mat q3(magnitudeImage, Rect(cx, cy, cx, cy));
+    // 打印信息
+    cout << "frameCount:" << frameCount << endl
+         << "calibration date:" << data << endl
+         << "camera matrix:" << camerMatrix2 << endl
+         << "distortion coeffs:" << distCoeffs2 << endl;
 
-    // 交换象限
-    Mat tmp;
-    q0.copyTo(tmp);
-    q3.copyTo(q0);
-    tmp.copyTo(q3);
-    q1.copyTo(tmp);
-    q2.copyTo(q1);
-    tmp.copyTo(q1);
+    // 第三种方法，使用FileNodeIterator遍历序列
+    FileNode features = fs2["features"];
+    FileNodeIterator it = features.begin(), it_end = features.end();
+    int idx = 0;
+    vector<uchar> lbpval;
 
-    // 归一化 用0-1之间的浮点值将矩阵变幻为可视的图像格式
-    normalize(magnitudeImage, magnitudeImage, 0, 1, NORM_MINMAX);
+    for (; it != it_end; ++it, ++idx) {
+        cout << "feature #" << idx << ": ";
+        cout << "x = " << (int)(*it)["x"]
+             << ", y = " << (int)(*it)["y"]
+             << ", lbp:(";
+        (*it)["lbp"] >> lbpval;
 
-    // 显示图片
-    imshow("效果图",magnitudeImage);
+        for (int i = 0; i < (int)lbpval.size(); ++i) {
+            cout << " " << (int)lbpval[i];
+        }
+        cout << ")" << endl;
+    }
+
+    // 关闭文件
+    fs2.release();
+
     waitKey(0);
-
     return 0;
 }
