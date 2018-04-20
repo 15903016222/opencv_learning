@@ -6,61 +6,62 @@
 using namespace cv;
 using namespace std;
 
-bool MultiChannelBlending () {
-    Mat srcImage;
-    Mat logoImage;
-    vector<Mat> channels;
-    Mat imageBlueChannel, imageGreenChannel, imageRedChannel;
+int g_nContrastValue;
+int g_nBrightValue;
+Mat g_srcImage, g_dstImage;
 
-    // 读入图像
-    srcImage = imread("../dota_jugg.jpg");
-    logoImage = imread("../dota_logo.jpg", 0);
+// 轨迹条位置改变的调用的函数
+void on_ContrastAndBright (int , void *) {
+    namedWindow("原始窗口", 1);
 
-    // 分离图像通道
-    // 第一个参数：需要进行分离的多通道数组Mat
-    // 第二个参数：需要输出的数组或者vector容器
-    split(srcImage, channels); // 分离彩色通道
-    // 取图像的每个通道的分量
-    imageBlueChannel  = channels.at(0);
-    imageGreenChannel = channels.at(1);
-    imageRedChannel   = channels.at(2);
+    for (int y = 0; y < g_srcImage.rows; ++y) {
+        for (int x = 0; x < g_srcImage.cols; ++x) {
+            for (int c = 0; c < 3; ++c) {
+                g_dstImage.at<Vec3b>(y, x)[c] =
+                        saturate_cast<uchar>((g_nContrastValue * 0.01) * (g_srcImage.at<Vec3b>(y, x)[c]) + g_nBrightValue);
+            }
+        }
+    }
 
-    // 定义ROI区域
-    Mat imageROIBlue  = imageBlueChannel(Rect(500, 250, logoImage.cols, logoImage.rows));
-    Mat imageROIGreen = imageGreenChannel(Rect(500, 250, logoImage.cols, logoImage.rows));
-    Mat imageROIRed   = imageRedChannel(Rect(500, 250, logoImage.cols, logoImage.rows));
-
-    // 线性区域权重叠加
-    // 多通道合成图像
-    // 显示
-    // Blue 通道混合
-    addWeighted(imageROIBlue, 1.0, logoImage, 0.5, 0.0, imageROIBlue);
-    // 第一个参数：需要被合并的输入矩阵，或者vector向量
-    // 第二个参数：输出矩阵
-    merge(channels, srcImage);
-    namedWindow("Blue通道混合【效果图】");
-    imshow("Blue通道混合【效果图】", srcImage);
-
-    // Green 通道混合
-    addWeighted(imageROIGreen, 1.0, logoImage, 0.5, 0.0, imageROIGreen);
-    merge(channels, srcImage); // 将三个独立的独立的通道合并成一个三通道图像
-    namedWindow("Green通道混合【效果图】");
-    imshow("Green通道混合【效果图】", srcImage);
-
-    // Red 通道混合
-    addWeighted(imageROIRed, 1.0, logoImage, 0.5, 0.0, imageROIRed);
-    merge(channels, srcImage);
-    namedWindow("Red通道混合【效果图】");
-    imshow("Red通道混合【效果图】", srcImage);
-
-    return true;
+    // 显示图像
+    imshow("原始窗口", g_srcImage);
+    imshow("效果窗口", g_dstImage);
 }
 
 int main (int argc, char *argv[]) {
+    // 读取图像
+    g_srcImage = imread ("../bright.jpg");
+    if (!g_srcImage.data) {
+        cout << "读取原始图像失败" << endl;
+        return -1;
+    }
+    g_dstImage = Mat::zeros(g_srcImage.size(), g_srcImage.type());
 
-    MultiChannelBlending();
+    // 设置对比度，亮度值
+    g_nBrightValue = 80;
+    g_nContrastValue = 80;
 
-    waitKey(0);
+    // 创建窗口
+    namedWindow("效果窗口", 1);
+
+    // 床架轨迹条
+    // 第一个参数：轨迹条的名字
+    // 第二个参数：轨迹条依附的窗口名字
+    // 第三个参数：表示滑块的位置，创建时，滑块的初始位置就是该变量的值，当滑块的位置改变时，这个值也会改变
+    // 第四个参数：滑块可以达到最大位置的值，最小值始终是0
+    // 第五个参数：回调函数 默认值0
+    // 第六个参数：void *默认值0 回调函数的需要的参数
+    createTrackbar("对比度", "效果窗口", &g_nContrastValue, 300, on_ContrastAndBright);
+    createTrackbar("亮  度", "效果窗口", &g_nBrightValue, 200, on_ContrastAndBright);
+
+    // 回调函数初始化 结果在回调函数中显示
+    // 这个函数必须初始化，否则回调函数就不会执行
+    on_ContrastAndBright (g_nContrastValue, NULL);
+    on_ContrastAndBright (g_nBrightValue, NULL);
+
+    while ('q' != char (waitKey(1))) {
+        ;
+    }
 
     return 0;
 }
