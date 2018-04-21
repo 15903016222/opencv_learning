@@ -7,43 +7,122 @@
 using namespace cv;
 using namespace std;
 
-int main (int argc, char *argv[]) {
-    // 创建原图窗口，读取图像，显示图像
-    namedWindow("<0>【原图】");
-    Mat srcImage = imread("../open.jpg");
-    imshow ("<0>【原图】", srcImage);
+// 定义全局变量信息
+Mat g_srcImage, g_dstImage;
+int g_nElementShape = 0;
+int g_nMaxIterationNum = 10;
+int g_nOpenCloseNum = 0;
+int g_nErodeDilateNum = 0;
+int g_nTopBlackHatNum = 0;
 
-    // 创建效果图像， 获取自定义内核， 形态学操作， 显示效果图
-    Mat dstImage;
-    namedWindow("<1>形态学操作【效果图】");
-    // 定义自定义内核
-    Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
-    // 描述：利用膨胀和腐蚀操作，进行高级的形态学变换
-    // 第一个参数： 原始输入图像
-    // 第二个参数： 输出图像
-    // 第三个参数： 形态学运算的类型
-    //            MORPH_OPEN----------开运算
-    //            MORPH_CLOSE---------闭运算
-    //            MORPH_GRADIENT------形态学梯度
-    //            MORPH_TOPHAT--------顶帽
-    //            MORPH_BLACKHAT------黑帽
-    //            MORPH_ERODE---------腐蚀操作
-    //            MORPH_DILATE--------膨胀操作
-    // 第四个参数： 形态学运行的内核。若为NULL，表示3x3内核的中心
-    // 第五个参数： 锚点 默认值Point(-1, -1)
-    // 第六个参数： 迭代使用函数的次数，默认值1
-    // 第七个参数： 推断图像外部像素的模中边界模式，默认值MORPH_CONSTANT,若改变畜产看文档
-    // 第八个参数： 一般不用去管他，默认值morphologyDefaultBorderValue()
-    morphologyEx(srcImage,
-                 dstImage,
-                 MORPH_GRADIENT,
-                 element,
-                 Point(-1, -1),
-                 1,
-                 BORDER_CONSTANT,
-                 morphologyDefaultBorderValue());
-    // 显示效果图
-    imshow("<1>形态学操作【效果图】", dstImage);
+// 定义回调函数
+void on_OpenClose (int , void *) {
+    // 偏移量定义
+    int offset = g_nOpenCloseNum - g_nMaxIterationNum;
+    int Absolute_offset = offset > 0 ? offset : -offset;
+
+    // 自定义核
+    Mat element = getStructuringElement(g_nElementShape,
+                                        Size(Absolute_offset << 1 | 1, Absolute_offset << 1 | 1),
+                                        Point(Absolute_offset, Absolute_offset));
+
+    // 形态学操作
+    if (offset < 0) {
+        // 开运算
+        morphologyEx(g_srcImage, g_dstImage, MORPH_OPEN, element);
+        imshow ("<1>开运算/闭运算", g_dstImage);
+    } else {
+        // 闭运算
+        morphologyEx(g_srcImage, g_dstImage, MORPH_CLOSE, element);
+        imshow ("<1>开运算/闭运算", g_dstImage);
+    }
+
+}
+
+void on_ErodeDilate (int , void *) {
+    int offset = g_nErodeDilateNum - g_nMaxIterationNum;
+    int Absolute_offset = offset > 0 ? offset : -offset;
+
+    Mat element = getStructuringElement(g_nElementShape,
+                                        Size(Absolute_offset << 1 | 1, Absolute_offset << 1 | 1),
+                                        Point(Absolute_offset, Absolute_offset));
+
+    if (offset < 0) {
+        // 腐蚀操作
+        morphologyEx(g_srcImage, g_dstImage, MORPH_ERODE, element);
+        imshow("<2>腐蚀/膨胀运算", g_dstImage);
+    } else {
+        // 膨胀操作
+        morphologyEx(g_srcImage, g_dstImage, MORPH_DILATE, element);
+        imshow("<2>腐蚀/膨胀运算", g_dstImage);
+    }
+}
+
+void on_TopBlackHat (int , void *) {
+    int offset = g_nTopBlackHatNum - g_nMaxIterationNum;
+    int Absolute_offset = offset > 0 ? offset : -offset;
+
+    Mat element = getStructuringElement(g_nElementShape,
+                                        Size(Absolute_offset << 1 | 1, Absolute_offset << 1 | 1),
+                                        Point(Absolute_offset, Absolute_offset));
+    if (offset < 0) {
+        // 顶帽操作
+        morphologyEx(g_srcImage, g_dstImage, MORPH_TOPHAT, element);
+        imshow("<3>顶帽/黑帽运算", g_dstImage);
+    } else {
+        // 黑帽操作
+        morphologyEx(g_srcImage, g_dstImage, MORPH_BLACKHAT, element);
+        imshow("<3>顶帽/黑帽运算", g_dstImage);
+    }
+}
+
+int main (int argc, char *argv[]) {
+    // 创建窗口
+    namedWindow("<0>【原图】");
+    namedWindow("<1>开运算/闭运算");
+    namedWindow("<2>腐蚀/膨胀运算");
+    namedWindow("<3>顶帽/黑帽运算");
+
+    // 读取原始图
+    g_srcImage = imread ("../America.jpg");
+    imshow ("<0>【原图】", g_srcImage);
+
+    // 创建轨迹条
+    createTrackbar("迭代值",
+                   "<1>开运算/闭运算",
+                   &g_nOpenCloseNum,
+                   g_nMaxIterationNum << 1 | 1,
+                   on_OpenClose);
+    createTrackbar("内核形状",
+                   "<1>开运算/闭运算",
+                   &g_nElementShape,
+                   1 << 1,
+                   on_OpenClose);
+    createTrackbar("迭代值",
+                   "<2>腐蚀/膨胀运算",
+                   &g_nErodeDilateNum,
+                   g_nMaxIterationNum << 1 | 1,
+                   on_ErodeDilate);
+    createTrackbar("内核形状",
+                   "<2>腐蚀/膨胀运算",
+                   &g_nElementShape,
+                   1 << 1,
+                   on_ErodeDilate);
+    createTrackbar("迭代值",
+                   "<3>顶帽/黑帽运算",
+                   &g_nTopBlackHatNum,
+                   g_nMaxIterationNum << 1 | 1,
+                   on_TopBlackHat);
+    createTrackbar("内核形状",
+                   "<3>顶帽/黑帽运算",
+                   &g_nElementShape,
+                   1 << 1,
+                   on_TopBlackHat);
+
+    // 回调函数初始化
+    on_OpenClose(g_nOpenCloseNum, NULL);
+    on_ErodeDilate(g_nErodeDilateNum, NULL);
+    on_TopBlackHat(g_nTopBlackHatNum, NULL);
 
     waitKey(0);
     return 0;
