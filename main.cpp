@@ -8,11 +8,11 @@ using namespace cv;
 using namespace std;
 
 int main (int argc, char *argv[]) {
-    // 创建两个窗口
-    namedWindow("方波滤波【原图】");
+    // 创建原图窗口
+    namedWindow("【原图】");
     // 读入图像,显示原图
     Mat srcImage = imread ("../boxfilter.jpg");
-    imshow("方波滤波【原图】", srcImage);
+    imshow("【原图】", srcImage);
 
     /* --------------方波滤波【boxFilter()】 */
     // 方波滤波操作
@@ -42,6 +42,21 @@ int main (int argc, char *argv[]) {
     // 显示均值滤波
     namedWindow("均值滤波【效果图】");
     imshow("均值滤波【效果图】", blurImage);
+
+    /* -------------高斯滤波GaussionBlur()---------- */
+    Mat gaussionImage;
+    // 第一个参数： 原始输入图像
+    // 第二个参数： 输出图像
+    // 第三个参数： 内核大小
+    // 第四个参数： 高斯函数在X方向的标准偏差
+    // 第五个参数： 高斯函数在Y方向的标准偏差 默认值0
+    //            若X，Y都为0， 那么就由ksize.width ksize.height计算出来
+    // 第六个参数： 使用默认值，一般不用太关心这个参数
+    GaussianBlur(srcImage, gaussionImage, Size(3, 3), 0, 0/*, BORDER_DEFAULT*/);
+
+    // 显示高斯滤波操作
+    namedWindow("高斯滤波【效果图】");
+    imshow("高斯滤波【效果图】", gaussionImage);
 
     waitKey(0);
     return 0;
