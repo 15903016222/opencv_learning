@@ -22,7 +22,7 @@ void on_BoxFilter (int , void *) {
               Size(g_nBoxFilter + 1, g_nBoxFilter + 1)
               /*, Point(-1, -1), true, BORDER_DEFAULT*/); // 注释的都是默认值
 
-    imshow("方框滤波【效果图】", g_dstBoxFilter);
+    imshow("<1>方框滤波【效果图】", g_dstBoxFilter);
 }
 
 void on_Blur (int , void *) {
@@ -30,7 +30,7 @@ void on_Blur (int , void *) {
          Size(g_nBlur + 1, g_nBlur + 1)
          /*, Point(-1, -1), BORDER_DEFAULT*/); // 注释的都是默认值
 
-    imshow("均值滤波【效果图】", g_dstBlur);
+    imshow("<2>均值滤波【效果图】", g_dstBlur);
 }
 
 void on_GaussionBlur (int , void *) {
@@ -40,24 +40,24 @@ void on_GaussionBlur (int , void *) {
                  0,
                  0/*, BORDER_DEFAULT*/);
 
-    imshow("高斯滤波【效果图】", g_dstGaussionBlur);
+    imshow("<3>高斯滤波【效果图】", g_dstGaussionBlur);
 }
 
 int main (int argc, char *argv[]) {
     // 创建原图窗口 3个滤波窗口
-    namedWindow("【原图】");
-    namedWindow("方框滤波【效果图】");
-    namedWindow("均值滤波【效果图】");
-    namedWindow("高斯滤波【效果图】");
+    namedWindow("<0>【原图】");
+    namedWindow("<1>方框滤波【效果图】");
+    namedWindow("<2>均值滤波【效果图】");
+    namedWindow("<3>高斯滤波【效果图】");
 
     // 读入图像,显示原图
-    srcImage = imread ("../boxfilter.jpg");
-    imshow("【原图】", srcImage);
+    srcImage = imread ("../linearImageFilter.jpg");
+    imshow("<0>【原图】", srcImage);
 
     // 创建3个轨迹条
-    createTrackbar("方框滤波", "方框滤波【效果图】", &g_nBoxFilter, 40, on_BoxFilter, NULL);
-    createTrackbar("均值滤波", "均值滤波【效果图】", &g_nBlur, 40, on_Blur, NULL);
-    createTrackbar("高斯滤波", "高斯滤波【效果图】", &g_nGaussionBlur, 40, on_GaussionBlur, NULL);
+    createTrackbar("方框滤波", "<1>方框滤波【效果图】", &g_nBoxFilter, 40, on_BoxFilter, NULL);
+    createTrackbar("均值滤波", "<2>均值滤波【效果图】", &g_nBlur, 40, on_Blur, NULL);
+    createTrackbar("高斯滤波", "<3>高斯滤波【效果图】", &g_nGaussionBlur, 40, on_GaussionBlur, NULL);
 
     // 初始化3个轨迹条
     on_BoxFilter(g_nBoxFilter, NULL);
