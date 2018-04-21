@@ -7,68 +7,61 @@
 using namespace cv;
 using namespace std;
 
+// 定义全局变量信息
+Mat g_srcImage, g_dstImage;
+int g_nTrackBarNum = 1;
+int g_nElementSizeChanges = 3;
+
+void process () {
+    Mat element = getStructuringElement(MORPH_RECT,
+                                        Size(g_nElementSizeChanges << 1 | 1, g_nElementSizeChanges << 1 | 1),
+                                        Point(g_nElementSizeChanges, g_nElementSizeChanges));
+
+    if (!g_nTrackBarNum) {
+        // 膨胀操作
+        dilate(g_srcImage, g_dstImage, element);
+    } else {
+        // 腐蚀操作
+        erode(g_srcImage, g_dstImage, element);
+    }
+
+    imshow("<1>膨胀/腐蚀【效果图】", g_dstImage);
+}
+
+// 定义回调函数
+void on_TrackBarChange (int , void *) {
+    process();
+}
+
+void on_ElemnetChange (int , void *) {
+    process();
+}
+
 int main (int argc, char *argv[]) {
     // 创建窗口
     namedWindow("<0>原始图像");
     // 读取原始图像，并显示
-    Mat srcImage = imread("../dilate.jpg");
-    imshow("<0>原始图像", srcImage);
+    g_srcImage = imread("../dilate_erode.jpg");
+    imshow("<0>原始图像", g_srcImage);
 
-    /* ------------膨胀操作dilate()------------- */
-    namedWindow("<1>膨胀操作【效果图】");
-    Mat dilateImage;
-    Mat element;
-    // 获取自定义核
-    // 描述：获取自定义核的信息
-    // 第一个参数： 自定义核的形状
-    // 第二个参数： 自定义核的大小
-    // 第三个参数： 锚点位置
-    element = getStructuringElement(MORPH_RECT, Size(15, 15), Point(-1, -1));
-    // 膨胀操作
-    // 描述：对图像进行膨胀操作
-    // 第一个参数： 原始输入图像
-    // 第二个参数： 输出图像
-    // 第三个参数： 自定义核
-    // 第四个参数： 锚点 默认值Point(-1, -1)
-    // 第五个参数： 迭代使用dilate()函数的次数，默认值1
-    // 第六个参数： 用于推断图像外部像素的某种边界模式，默认值：BORDER_CONSTANT
-    // 第七个参数： 一般不用特别关注，如果用到，需要到文档中仔细阅读
-    dilate(srcImage,
-           dilateImage,
-           element,
-           Point(-1, -1),
-           1,
-           BORDER_CONSTANT,
-           morphologyDefaultBorderValue());
-    // 显示效果图
-    imshow("<1>膨胀操作【效果图】", dilateImage);
-
-    /* -------------腐蚀操作erode()------------- */
-    namedWindow("<2>腐蚀操作【原图】");
-    // 读取原始图像
-    Mat srcErodeImage = imread("../erode.jpg");
-    imshow("<2>腐蚀操作【原图】", srcErodeImage);
+    // 获取自定义内核信息
+    Mat element =
+            getStructuringElement(MORPH_RECT,
+                                  Size(g_nElementSizeChanges << 1 | 1, g_nElementSizeChanges << 1 | 1),
+                                  Point(g_nElementSizeChanges, g_nElementSizeChanges));
 
     // 腐蚀操作
-    namedWindow("<3>腐蚀操作【效果图】");
-    Mat dstErodeImage;
-    // 腐蚀操作
-    // 描述：对图像进行腐蚀操作
-    // 第一个参数： 原始输入图像
-    // 第二个参数： 输出图像
-    // 第三个参数： 自定义核
-    // 第四个参数： 锚点 默认值Point(-1, -1)
-    // 第五个参数： 迭代使用dilate()函数的次数，默认值1
-    // 第六个参数： 用于推断图像外部像素的某种边界模式，默认值：BORDER_CONSTANT
-    // 第七个参数： 一般不用特别关注，如果用到，需要到文档中仔细阅读
-    erode(srcErodeImage,
-          dstErodeImage,
-          element,
-          Point(-1, -1),
-          1,
-          BORDER_CONSTANT,
-          morphologyDefaultBorderValue());
-    imshow("<3>腐蚀操作【效果图】", dstErodeImage);
+    erode(g_srcImage, g_dstImage, element);
+    // 显示操作图
+    namedWindow("<1>膨胀/腐蚀【效果图】");
+
+    // 创建轨迹条
+    createTrackbar("膨胀/腐蚀", "<1>膨胀/腐蚀【效果图】", &g_nTrackBarNum, 1, on_TrackBarChange);
+    createTrackbar("内核尺寸", "<1>膨胀/腐蚀【效果图】", &g_nElementSizeChanges, 40, on_ElemnetChange);
+
+    // 初始化回调函数
+    on_TrackBarChange(g_nTrackBarNum, NULL);
+    on_ElemnetChange(g_nElementSizeChanges, NULL);
 
     waitKey(0);
     return 0;
