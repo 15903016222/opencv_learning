@@ -8,79 +8,27 @@ using namespace cv;
 using namespace std;
 
 int main (int argc, char *argv[]) {
-    /* -------------写文件----------- */
-    // 初始化
-    FileStorage fs("../test.yaml", FileStorage::WRITE);
+    /* --------------方波滤波【boxFilter()】 */
+    // 创建两个窗口
+    namedWindow("方波滤波【原图】");
+    namedWindow("方波滤波【效果图】");
+    // 读入图像,显示原图
+    Mat srcImage = imread ("../boxfilter.jpg");
+    imshow("方波滤波【原图】", srcImage);
 
-    // 开始写入文件
-    fs << "frameCount" << 5;
-    time_t rawtime;
-    time(&rawtime);
-    fs << "calibrationDate" << asctime(localtime(&rawtime));
-    Mat camerMatrix = (Mat_<double>(3, 3) << 1000, 0, 320, 0, 1000, 240, 0, 0, 1);
-    Mat distCoeffs = (Mat_<double>(5, 1) << 0.1, 0.01, -0.001, 0, 0);
-    fs << "camerMatrix" << camerMatrix << "distCoeffs" << distCoeffs;
-    fs << "features" << "[";
-    for (int i = 0; i < 3; ++i) {
-        int x = rand () % 640;
-        int y = rand () % 480;
-        uchar lbp = rand () % 256;
+    // 方波滤波操作
+    Mat dstImage;
+    // 第一个参数： 原始输入图像
+    // 第二个参数： 输出图像
+    // 第三个参数： ddepth,输出图像深度，-1：表示使用的原始输入图像的深度
+    // 第四个参数： 方波滤波的内核大小(方波大小)
+    // 第五个参数： Point(w, h), 表示方波的中心：(-1, -1) 并且还是默认值
+    // 第六个参数： normalize:是否矩阵归一化，默认值true
+    // 第七个参数： borderType:一般不需要设置，使用默认值即可
+    boxFilter(srcImage, dstImage, -1, Size(3, 3)/*, Point(-1, -1), true, BORDER_DEFAULT*/);
 
-        fs << "{:" << "x" << x << "y" << y << "lbp" << "[:";
-        for (int j = 0; j < 8; ++j) {
-            fs << ((lbp >> j) & 1);
-        }
-        fs << "]" << "}";
-    }
-    fs << "]";
-
-    // 释放文件
-    fs.release();
-
-    /* -----------------读文件------------- */
-    // 初始化
-    FileStorage fs2("../test.yaml", FileStorage::READ);
-
-    // 第一种方法读文件，对fileNode操作
-    int frameCount = (int)fs2["frameCount"];
-    cout << "frameCount : " << frameCount << endl;
-
-    string data;
-    // 第二种方法，使用FileNode >> 运算符
-    fs2["calibrationDate"] >> data;
-    cout << "clibrationDate : " << data;
-
-    Mat camerMatrix2, distCoeffs2;
-    fs2["camerMatrix"] >> camerMatrix2;
-    fs2["distCoeffs"] >> distCoeffs2;
-
-    // 打印信息
-    cout << "frameCount:" << frameCount << endl
-         << "calibration date:" << data << endl
-         << "camera matrix:" << camerMatrix2 << endl
-         << "distortion coeffs:" << distCoeffs2 << endl;
-
-    // 第三种方法，使用FileNodeIterator遍历序列
-    FileNode features = fs2["features"];
-    FileNodeIterator it = features.begin(), it_end = features.end();
-    int idx = 0;
-    vector<uchar> lbpval;
-
-    for (; it != it_end; ++it, ++idx) {
-        cout << "feature #" << idx << ": ";
-        cout << "x = " << (int)(*it)["x"]
-             << ", y = " << (int)(*it)["y"]
-             << ", lbp:(";
-        (*it)["lbp"] >> lbpval;
-
-        for (int i = 0; i < (int)lbpval.size(); ++i) {
-            cout << " " << (int)lbpval[i];
-        }
-        cout << ")" << endl;
-    }
-
-    // 关闭文件
-    fs2.release();
+    // 显示效果图
+    imshow("方波滤波【效果图】", dstImage);
 
     waitKey(0);
     return 0;
