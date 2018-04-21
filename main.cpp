@@ -7,62 +7,26 @@
 using namespace cv;
 using namespace std;
 
-// 全局变量声明
-// 原始图像 创建3个不同线性滤波的输出图像
-Mat srcImage, g_dstBoxFilter, g_dstBlur, g_dstGaussionBlur;
-int g_nBoxFilter = 3;       // 方框滤波内核参数大小
-int g_nBlur = 3;            // 均值滤波内核参数大小
-int g_nGaussionBlur = 3;    // 高斯滤波内核参数大小
-
-// 3个轨迹条的回调函数
-void on_BoxFilter (int , void *) {
-    boxFilter(srcImage,
-              g_dstBoxFilter,
-              -1,
-              Size(g_nBoxFilter + 1, g_nBoxFilter + 1)
-              /*, Point(-1, -1), true, BORDER_DEFAULT*/); // 注释的都是默认值
-
-    imshow("<1>方框滤波【效果图】", g_dstBoxFilter);
-}
-
-void on_Blur (int , void *) {
-    blur(srcImage, g_dstBlur,
-         Size(g_nBlur + 1, g_nBlur + 1)
-         /*, Point(-1, -1), BORDER_DEFAULT*/); // 注释的都是默认值
-
-    imshow("<2>均值滤波【效果图】", g_dstBlur);
-}
-
-void on_GaussionBlur (int , void *) {
-    GaussianBlur(srcImage,
-                 g_dstGaussionBlur,
-                 Size(g_nGaussionBlur << 1 | 1, g_nGaussionBlur << 1 | 1), // 高斯滤波的内核大小必须是奇数
-                 0,
-                 0/*, BORDER_DEFAULT*/);
-
-    imshow("<3>高斯滤波【效果图】", g_dstGaussionBlur);
-}
-
 int main (int argc, char *argv[]) {
-    // 创建原图窗口 3个滤波窗口
-    namedWindow("<0>【原图】");
-    namedWindow("<1>方框滤波【效果图】");
-    namedWindow("<2>均值滤波【效果图】");
-    namedWindow("<3>高斯滤波【效果图】");
+    // 创建窗口
+    namedWindow("<0>原始图像【原图】");
+    namedWindow("<1>中值滤波操作【效果图】");
 
-    // 读入图像,显示原图
-    srcImage = imread ("../linearImageFilter.jpg");
-    imshow("<0>【原图】", srcImage);
+    // 读取图像并显示
+    Mat srcImage = imread("../medianblur.jpg", 1);
+    imshow("<0>原始图像【原图】", srcImage);
 
-    // 创建3个轨迹条
-    createTrackbar("方框滤波", "<1>方框滤波【效果图】", &g_nBoxFilter, 40, on_BoxFilter, NULL);
-    createTrackbar("均值滤波", "<2>均值滤波【效果图】", &g_nBlur, 40, on_Blur, NULL);
-    createTrackbar("高斯滤波", "<3>高斯滤波【效果图】", &g_nGaussionBlur, 40, on_GaussionBlur, NULL);
+    /* ---------中值滤波操作函数[medianBlur()]-------- */
+    // 中值滤波操作
+    Mat dstMediaImage;
+    // 第一个参数： 原始图像，输入图像
+    // 第二个参数： 输出图像
+    // 第三个参数： 孔径线性尺寸,这个参数必须是大于1的奇数，如：3， 5， 7， 9 ... ...
+    medianBlur(srcImage, dstMediaImage, 3);
 
-    // 初始化3个轨迹条
-    on_BoxFilter(g_nBoxFilter, NULL);
-    on_Blur(g_nBlur, NULL);
-    on_GaussionBlur(g_nGaussionBlur, NULL);
+    // 显示效果图像
+    imshow("<1>中值滤波操作【效果图】", dstMediaImage);
+
 
     waitKey(0);
     return 0;
