@@ -7,43 +7,106 @@
 using namespace cv;
 using namespace std;
 
+// 全局变量的定义及描述
+Mat g_srcImage;
+Mat g_dstBoxFilterImgage, g_dstBlurImage, g_dstGaussionImage;
+Mat g_dstMediaImage, g_dstbilateraImage;
+
+int g_nBoxFilter = 4;
+int g_nBlur = 4;
+int g_nGaussion = 4;
+int g_nMedia = 4;
+int g_nBilatera =4;
+
+// 轨迹回调函数
+void on_BoxFilter (int , void *) {
+    boxFilter(g_srcImage,
+              g_dstBoxFilterImgage,
+              -1,
+              Size(g_nBoxFilter + 1, g_nBoxFilter + 1));
+    imshow("<1>方框滤波【效果图】", g_dstBoxFilterImgage);
+}
+
+void on_Blur (int , void *) {
+    blur(g_srcImage,
+         g_dstBlurImage,
+         Size(g_nBlur + 1, g_nBlur + 1));
+    imshow("<2>均值滤波【效果图】", g_dstBlurImage);
+}
+
+void on_Guassion (int , void *) {
+    GaussianBlur(g_srcImage,
+                 g_dstGaussionImage,
+                 Size(g_nGaussion << 2 | 1, g_nGaussion << 2 | 1), // Size 必须是奇数
+                 0, 0);
+
+    imshow("<3>高斯滤波【效果图】", g_dstGaussionImage);
+}
+
+void on_Media (int , void *) {
+    medianBlur(g_srcImage,
+               g_dstMediaImage,
+               g_nMedia << 2 | 1);  // 这个参数必须是大于1的奇数
+
+    imshow("<4>中值滤波【效果图】", g_dstMediaImage);
+}
+
+void on_Bilatera (int , void *) {
+    bilateralFilter(g_srcImage,
+                    g_dstbilateraImage,
+                    g_nBilatera,
+                    g_nBilatera << 1,
+                    g_nBilatera >> 1);
+
+    imshow("<5>双边滤波【效果图】", g_dstbilateraImage);
+}
+
 int main (int argc, char *argv[]) {
     // 创建窗口
-    namedWindow("<0>原始图像【原图】");
-    namedWindow("<1>中值滤波操作【效果图】");
+    namedWindow("<0>原始图像");
+    // 读取原始图像，并显示
+    g_srcImage = imread("../filter.jpg");
+    imshow("<0>原始图像", g_srcImage);
 
-    // 读取图像并显示
-    Mat srcImage = imread("../medianblur.jpg", 1);
-    imshow("<0>原始图像【原图】", srcImage);
+    /* -----------方框滤波--------- */
+    // 1. 创建方框滤波效果窗口
+    namedWindow("<1>方框滤波【效果图】");
+    // 2. 创建轨迹条
+    createTrackbar("方框滤波", "<1>方框滤波【效果图】", &g_nBoxFilter, 40, on_BoxFilter, NULL);
+    // 3. 初始化轨迹条
+    on_BoxFilter(g_nBoxFilter, NULL);
 
-    /* ---------中值滤波操作函数[medianBlur()]-------- */
-    // 中值滤波操作
-    Mat dstMediaImage;
-    // 第一个参数： 原始图像，输入图像
-    // 第二个参数： 输出图像
-    // 第三个参数： 孔径线性尺寸,这个参数必须是大于1的奇数，如：3， 5， 7， 9 ... ...
-    medianBlur(srcImage, dstMediaImage, 3);
+    /* -----------均值滤波--------- */
+    // 1. 创建均值滤波效果窗口
+    namedWindow("<2>均值滤波【效果图】");
+    // 2. 创建轨迹条
+    createTrackbar("均值滤波", "<2>均值滤波【效果图】", &g_nBlur, 40, on_Blur);
+    // 3. 初始化轨迹条
+    on_Blur(g_nBlur, NULL);
 
-    // 显示效果图像
-    imshow("<1>中值滤波操作【效果图】", dstMediaImage);
+    /* -----------高斯滤波--------- */
+    // 1. 创建高斯滤波效果窗口
+    namedWindow("<3>高斯滤波【效果图】");
+    // 2. 创建轨迹条
+    createTrackbar("高斯滤波", "<3>高斯滤波【效果图】", &g_nGaussion, 40, on_Guassion);
+    // 3. 初始化轨迹条
+    on_Guassion(g_nGaussion, NULL);
 
-    /* ------------双边滤波操作[bilateralFilter()]-------------- */
-    namedWindow("<2>双边滤波操作效果图");
-    Mat dstBilateralImage;
-    // 第一个参数： 输入原始图像
-    // 第二个参数： 输出图像
-    // 第三个参数： 表示滤波过程中，每个像素的邻域，如果设置为非正数，则由第五个参数计算出来
-    // 第四个参数： 颜色空间域的sigma值，这个值越大，说明该像素邻域内有越宽广的颜色混合进来
-    // 第五个参数： 这个值越大，意味着越远的像素会相互影响
-    // 第六个参数： 一般不考虑，不需要太关心
-    bilateralFilter(srcImage,
-                    dstBilateralImage,
-                    25,
-                    25 * 2,
-                    25 / 2/*, BORDER_DEFAULT*/);
+    /* -----------中值滤波--------- */
+    // 1. 创建中值滤波效果窗口
+    namedWindow("<4>中值滤波【效果图】");
+    // 2. 创建轨迹条
+    createTrackbar("中值滤波", "<4>中值滤波【效果图】", &g_nMedia, 40, on_Media);
+    // 3. 初始化轨迹条
+    on_Media(g_nMedia, NULL);
 
-    // 显示双边滤波操作的效果图
-    imshow("<2>双边滤波操作效果图", dstBilateralImage);
+    /* -----------双边滤波--------- */
+    // 1. 创建双边滤波效果窗口
+    namedWindow("<5>双边滤波【效果图】");
+    // 2. 创建轨迹条
+    createTrackbar("双边滤波", "<5>双边滤波【效果图】", &g_nBilatera, 40, on_Bilatera);
+    // 3. 初始化轨迹条
+    on_Bilatera(g_nBilatera, NULL);
 
     waitKey(0);
     return 0;
