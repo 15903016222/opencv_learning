@@ -9,7 +9,7 @@ using namespace std;
 
 // 定义全局变量信息
 Mat g_srcImage, g_dstImage;
-int g_nElementShape = 0;
+int g_nElementShape = MORPH_RECT; // MORPH_RECT->矩形， MORPH_CROSS->十字架, MORPH_ELLIPSE->椭圆
 int g_nMaxIterationNum = 10;
 int g_nOpenCloseNum = 0;
 int g_nErodeDilateNum = 0;
