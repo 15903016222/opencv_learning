@@ -7,61 +7,43 @@
 using namespace cv;
 using namespace std;
 
-// 定义全局变量信息
-Mat g_srcImage, g_dstImage;
-int g_nTrackBarNum = 1;
-int g_nElementSizeChanges = 3;
-
-void process () {
-    Mat element = getStructuringElement(MORPH_RECT,
-                                        Size(g_nElementSizeChanges << 1 | 1, g_nElementSizeChanges << 1 | 1),
-                                        Point(g_nElementSizeChanges, g_nElementSizeChanges));
-
-    if (!g_nTrackBarNum) {
-        // 膨胀操作
-        dilate(g_srcImage, g_dstImage, element);
-    } else {
-        // 腐蚀操作
-        erode(g_srcImage, g_dstImage, element);
-    }
-
-    imshow("<1>膨胀/腐蚀【效果图】", g_dstImage);
-}
-
-// 定义回调函数
-void on_TrackBarChange (int , void *) {
-    process();
-}
-
-void on_ElemnetChange (int , void *) {
-    process();
-}
-
 int main (int argc, char *argv[]) {
-    // 创建窗口
-    namedWindow("<0>原始图像");
-    // 读取原始图像，并显示
-    g_srcImage = imread("../dilate_erode.jpg");
-    imshow("<0>原始图像", g_srcImage);
+    // 创建原图窗口，读取图像，显示图像
+    namedWindow("<0>【原图】");
+    Mat srcImage = imread("../open.jpg");
+    imshow ("<0>【原图】", srcImage);
 
-    // 获取自定义内核信息
-    Mat element =
-            getStructuringElement(MORPH_RECT,
-                                  Size(g_nElementSizeChanges << 1 | 1, g_nElementSizeChanges << 1 | 1),
-                                  Point(g_nElementSizeChanges, g_nElementSizeChanges));
-
-    // 腐蚀操作
-    erode(g_srcImage, g_dstImage, element);
-    // 显示操作图
-    namedWindow("<1>膨胀/腐蚀【效果图】");
-
-    // 创建轨迹条
-    createTrackbar("膨胀/腐蚀", "<1>膨胀/腐蚀【效果图】", &g_nTrackBarNum, 1, on_TrackBarChange);
-    createTrackbar("内核尺寸", "<1>膨胀/腐蚀【效果图】", &g_nElementSizeChanges, 40, on_ElemnetChange);
-
-    // 初始化回调函数
-    on_TrackBarChange(g_nTrackBarNum, NULL);
-    on_ElemnetChange(g_nElementSizeChanges, NULL);
+    // 创建效果图像， 获取自定义内核， 形态学操作， 显示效果图
+    Mat dstImage;
+    namedWindow("<1>形态学操作【效果图】");
+    // 定义自定义内核
+    Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
+    // 描述：利用膨胀和腐蚀操作，进行高级的形态学变换
+    // 第一个参数： 原始输入图像
+    // 第二个参数： 输出图像
+    // 第三个参数： 形态学运算的类型
+    //            MORPH_OPEN----------开运算
+    //            MORPH_CLOSE---------闭运算
+    //            MORPH_GRADIENT------形态学梯度
+    //            MORPH_TOPHAT--------顶帽
+    //            MORPH_BLACKHAT------黑帽
+    //            MORPH_ERODE---------腐蚀操作
+    //            MORPH_DILATE--------膨胀操作
+    // 第四个参数： 形态学运行的内核。若为NULL，表示3x3内核的中心
+    // 第五个参数： 锚点 默认值Point(-1, -1)
+    // 第六个参数： 迭代使用函数的次数，默认值1
+    // 第七个参数： 推断图像外部像素的模中边界模式，默认值MORPH_CONSTANT,若改变畜产看文档
+    // 第八个参数： 一般不用去管他，默认值morphologyDefaultBorderValue()
+    morphologyEx(srcImage,
+                 dstImage,
+                 MORPH_GRADIENT,
+                 element,
+                 Point(-1, -1),
+                 1,
+                 BORDER_CONSTANT,
+                 morphologyDefaultBorderValue());
+    // 显示效果图
+    imshow("<1>形态学操作【效果图】", dstImage);
 
     waitKey(0);
     return 0;
