@@ -12,6 +12,13 @@ Mat g_mat;
 int g_RedNum   = 0;
 int g_GreenNum = 0;
 int g_BlueNum  = 0;
+
+void onMouse (int event, int x, int y, int, void *) {
+    cout << "count: " << event << endl
+         << "x: " << x << endl
+         << "y: " << y << endl;
+}
+
 void showColor () {
     for (int x = 0; x < g_mat.rows; ++x) {
         for (int y = 0; y < g_mat.cols; ++y) {
@@ -40,6 +47,8 @@ int main (int argc, char *argv[]) {
     // 创建窗口
     namedWindow("ColorBar");
     g_mat = Mat(480, 480, CV_8UC3);
+
+    setMouseCallback("ColorBar", onMouse, NULL);
 
     // 创建轨迹条
     createTrackbar("R", "ColorBar", &g_RedNum,255, on_Red);
