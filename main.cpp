@@ -1,76 +1,58 @@
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 
 using namespace cv;
 using namespace std;
 
-void showHelpText () {
-    printf( "\n\n\t按键操作说明: \n\n"
-        "\t\t鼠标点击图中区域- 进行漫水填充操作\n"
-        "\t\t键盘按键【ESC】- 退出程序\n"
-        "\t\t键盘按键【q】  - 退出程序\n"
-        "\t\t键盘按键【a】  - pyrUp   放大图像\n"
-        "\t\t键盘按键【w】  - resize  放大图像\n"
-        "\t\t键盘按键【s】  - pyrDown 缩小图像\n"
-        "\t\t键盘按键【d】  - resize  缩小图像\n" );
+// 定义全局变量信息
+int g_nThresholdValue = 100;
+int g_nThresholdType = 3; // 0 THRES_BINARY ---------- 二进制阀值化
+                          // 1 THRES_BINARY_INV ------ 反向二进制阀值化并翻转
+                          // 2 THRES_TRUNC ----------- 截断阀值化
+                          // 3 THRES_TOZERO ---------- 超过阀值被置为0
+                          // 4 THRES_TOZERO_INV ------ 低于阀值被置为0
+Mat g_srcImage, g_grayImage, g_dstImage;
+
+// 定义回调函数
+void on_Threshold (int , void *) {
+    threshold(g_srcImage,
+              g_dstImage,
+              g_nThresholdValue,
+              255,
+              g_nThresholdType);
+
+    imshow ("<1>【效果图】", g_dstImage);
 }
 
 int main( int argc, char** argv )
 {
     // 创建窗口 读取图片 显示原图
     namedWindow("<0>【原图】");
-    Mat srcImage = imread ("../pyr_resize.jpg");
-    imshow("<0>【原图】", srcImage);
+    g_srcImage = imread ("../threshold.jpg");
+    imshow("<0>【原图】", g_srcImage);
 
-    showHelpText();
-
-    // 创建窗口 图像调整后的矩阵 图像调整尺寸 显示效果图
-    Mat tmpImage = srcImage;
-    Mat dstImage = tmpImage;
+    // 创建灰度图窗口，生成灰度图
     namedWindow("<1>【效果图】");
+    cvtColor(g_srcImage, g_grayImage, COLOR_RGB2GRAY);
+    imshow("<1>【效果图】", g_grayImage);
 
-    int key = 0;
+    // 创建轨迹条，初始化回调函数
+    createTrackbar("模  式",
+                   "<1>【效果图】",
+                   &g_nThresholdType,
+                   4,
+                   on_Threshold);
+    createTrackbar("参数值",
+                   "<1>【效果图】",
+                   &g_nThresholdValue,
+                   255,
+                   on_Threshold);
 
-    while (1) {
-        key = waitKey (30);
-        switch (key) {
-        case 27:
-            return 0;
-            break;
-        case 'q':
-            return 0;
-            break;
+    on_Threshold(g_nThresholdValue, NULL);
 
-        /* --------------图像放大------------ */
-        case 'a':
-            pyrUp(tmpImage,
-                  dstImage,
-                  Size(tmpImage.cols << 1, tmpImage.rows << 1),
-                  BORDER_DEFAULT);
-            break;
-        case 'w':
-            resize(tmpImage,
-                   dstImage,
-                   Size(tmpImage.cols << 1, tmpImage.rows << 1));
-            break;
-
-        /* -------------图像缩小------------- */
-        case 'd':
-            pyrDown(tmpImage,
-                    dstImage,
-                    Size(tmpImage.cols >> 1, tmpImage.rows >> 1),
-                    BORDER_DEFAULT);
-            break;
-        case 's':
-            resize(tmpImage,
-                   dstImage,
-                   Size(tmpImage.cols >> 1, tmpImage.rows >> 1));
-            break;
-        }
-
-        imshow("<1>【效果图】", dstImage);
-    }
+    waitKey(0);
 
     return 0;
 }
