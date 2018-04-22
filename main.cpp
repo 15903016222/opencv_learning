@@ -5,42 +5,72 @@
 using namespace cv;
 using namespace std;
 
+void showHelpText () {
+    printf( "\n\n\t按键操作说明: \n\n"
+        "\t\t鼠标点击图中区域- 进行漫水填充操作\n"
+        "\t\t键盘按键【ESC】- 退出程序\n"
+        "\t\t键盘按键【q】  - 退出程序\n"
+        "\t\t键盘按键【a】  - pyrUp   放大图像\n"
+        "\t\t键盘按键【w】  - resize  放大图像\n"
+        "\t\t键盘按键【s】  - pyrDown 缩小图像\n"
+        "\t\t键盘按键【d】  - resize  缩小图像\n" );
+}
+
 int main( int argc, char** argv )
 {
     // 创建窗口 读取图片 显示原图
     namedWindow("<0>【原图】");
-    Mat srcImage = imread ("../resize.jpg");
+    Mat srcImage = imread ("../pyr_resize.jpg");
     imshow("<0>【原图】", srcImage);
 
+    showHelpText();
+
     // 创建窗口 图像调整后的矩阵 图像调整尺寸 显示效果图
+    Mat tmpImage = srcImage;
+    Mat dstImage = tmpImage;
     namedWindow("<1>【效果图】");
-    namedWindow("<2>【效果图】");
-    Mat dstImage1, dstImage2;
 
-    // 向上取样 并模糊一张图像 也就是放大一张图像
-    // 描述： 向上取样，一般用于放大图像
-    // 第一个参数： 原始输入图像
-    // 第二个参数： 输出图像
-    // 第三个参数： 输出图像大小
-    // 第四个参数： 一般使用默认值，不用太关心
-    pyrUp(srcImage,
-          dstImage1,
-          Size(srcImage.cols << 1, srcImage.rows << 1),
-          BORDER_DEFAULT);
-    imshow ("<1>【效果图】", dstImage1);
+    int key = 0;
 
-    // 向下取样 并模糊一张图像
-    // 描述：向下取样，并模糊一张图片，也就是缩小一张图像
-    // 第一个参数： 原始输入图像
-    // 第二个参数： 输出图像
-    // 第三个参数： 输出图像大小
-    // 第四个参数： 使用默认值，一般不关心
-    pyrDown(srcImage,
-            dstImage2,
-            Size(srcImage.cols >> 1, srcImage.rows >> 1),
-            BORDER_DEFAULT);
-    imshow("<2>【效果图】", dstImage2);
+    while (1) {
+        key = waitKey (30);
+        switch (key) {
+        case 27:
+            return 0;
+            break;
+        case 'q':
+            return 0;
+            break;
 
-    waitKey(0);
+        /* --------------图像放大------------ */
+        case 'a':
+            pyrUp(tmpImage,
+                  dstImage,
+                  Size(tmpImage.cols << 1, tmpImage.rows << 1),
+                  BORDER_DEFAULT);
+            break;
+        case 'w':
+            resize(tmpImage,
+                   dstImage,
+                   Size(tmpImage.cols << 1, tmpImage.rows << 1));
+            break;
+
+        /* -------------图像缩小------------- */
+        case 'd':
+            pyrDown(tmpImage,
+                    dstImage,
+                    Size(tmpImage.cols >> 1, tmpImage.rows >> 1),
+                    BORDER_DEFAULT);
+            break;
+        case 's':
+            resize(tmpImage,
+                   dstImage,
+                   Size(tmpImage.cols >> 1, tmpImage.rows >> 1));
+            break;
+        }
+
+        imshow("<1>【效果图】", dstImage);
+    }
+
     return 0;
 }
