@@ -6,51 +6,39 @@
 using namespace cv;
 using namespace std;
 
-// 定义全局变量信息
-int g_nThresholdValue = 100;
-int g_nThresholdType = 3; // 0 THRES_BINARY ---------- 二进制阀值化
-                          // 1 THRES_BINARY_INV ------ 反向二进制阀值化并翻转
-                          // 2 THRES_TRUNC ----------- 截断阀值化
-                          // 3 THRES_TOZERO ---------- 超过阀值被置为0
-                          // 4 THRES_TOZERO_INV ------ 低于阀值被置为0
-Mat g_srcImage, g_grayImage, g_dstImage;
-
-// 定义回调函数
-void on_Threshold (int , void *) {
-    threshold(g_srcImage,
-              g_dstImage,
-              g_nThresholdValue,
-              255,
-              g_nThresholdType);
-
-    imshow ("<1>【效果图】", g_dstImage);
-}
-
 int main( int argc, char** argv )
 {
     // 创建窗口 读取图片 显示原图
     namedWindow("<0>【原图】");
-    g_srcImage = imread ("../threshold.jpg");
-    imshow("<0>【原图】", g_srcImage);
+    Mat srcImage = imread ("../Canny.jpg");
+    imshow("<0>【原图】", srcImage);
 
-    // 创建灰度图窗口，生成灰度图
-    namedWindow("<1>【效果图】");
-    cvtColor(g_srcImage, g_grayImage, COLOR_RGB2GRAY);
-    imshow("<1>【效果图】", g_grayImage);
+    // 高阶Canny()用法，转成灰度图，降噪，用canny，最后将得到的边缘最为掩码
+    // 拷贝原图的效果上，得到彩色的边缘图
+    Mat srcImage1 = srcImage.clone();
 
-    // 创建轨迹条，初始化回调函数
-    createTrackbar("模  式",
-                   "<1>【效果图】",
-                   &g_nThresholdType,
-                   4,
-                   on_Threshold);
-    createTrackbar("参数值",
-                   "<1>【效果图】",
-                   &g_nThresholdValue,
-                   255,
-                   on_Threshold);
+    Mat dstImage, edgeImage, grayImage;
+    // 创建与src同类型和大小的矩阵【dstImage】
+    dstImage.create(srcImage1.size(), srcImage1.type());
+    // 将原图像转换为灰度图
+    cvtColor(srcImage1, grayImage, COLOR_BGR2GRAY);
+    // 均值滤波3x3内核滤波
+    blur(grayImage, edgeImage, Size(3, 3));
+    // 运行Canny算子
+    // 第一个参数： 原始输入图像
+    // 第二个参数： 输出图像
+    // 第三个参数： 第一个滞后阀值
+    // 第四个参数： 第二个滞后阀值
+    // 第五个参数： 应用Sobel算子的孔径大小 默认值3
+    // 第六个参数： 图像梯度幅度的标识 默认值false
+    Canny(edgeImage, edgeImage, 3, 9, 3);
+    // 将dstImage内的所有元素设置为0
+    dstImage = Scalar::all(0);
+    // 将获得的掩码，来将原图拷贝到输出图像
+    srcImage1.copyTo(dstImage, edgeImage);
 
-    on_Threshold(g_nThresholdValue, NULL);
+    imshow("<1>【效果图】", dstImage);
+    imshow("<2>【掩码图】", edgeImage);
 
     waitKey(0);
 
