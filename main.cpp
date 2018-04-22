@@ -17,27 +17,29 @@ int main( int argc, char** argv )
     namedWindow("<2>【效果图】");
     Mat dstImage1, dstImage2;
 
-    // 描述：resize()调整图像大小函数
+    // 向上取样 并模糊一张图像 也就是放大一张图像
+    // 描述： 向上取样，一般用于放大图像
     // 第一个参数： 原始输入图像
-    // 第二个参数： 输出图像，当其非零时，由第三个参数dsize决定 或者 由src.size()决定
-    // 第三个参数： 输出图像的大小，如果等于0，由dsize = Size(round(fx*src.cols), round(fy*src.rows))
-    // 第四个参数： 沿水平轴的缩放系数
-    // 第五个参数： 沿垂直轴的缩放系数
-    // 第六个参数： 指定插值方式，默认INTER_LINEAR---线性插值
-    resize(srcImage,
-           dstImage1,
-           Size(srcImage.cols >> 1, srcImage.rows >> 1),
-           0,
-           0,
-           3);
+    // 第二个参数： 输出图像
+    // 第三个参数： 输出图像大小
+    // 第四个参数： 一般使用默认值，不用太关心
+    pyrUp(srcImage,
+          dstImage1,
+          Size(srcImage.cols << 1, srcImage.rows << 1),
+          BORDER_DEFAULT);
     imshow ("<1>【效果图】", dstImage1);
-    resize(srcImage,
-           dstImage2,
-           Size(srcImage.cols << 1, srcImage.rows << 1),
-           0,
-           0,
-           3);
-    imshow ("<2>【效果图】", dstImage2);
+
+    // 向下取样 并模糊一张图像
+    // 描述：向下取样，并模糊一张图片，也就是缩小一张图像
+    // 第一个参数： 原始输入图像
+    // 第二个参数： 输出图像
+    // 第三个参数： 输出图像大小
+    // 第四个参数： 使用默认值，一般不关心
+    pyrDown(srcImage,
+            dstImage2,
+            Size(srcImage.cols >> 1, srcImage.rows >> 1),
+            BORDER_DEFAULT);
+    imshow("<2>【效果图】", dstImage2);
 
     waitKey(0);
     return 0;
