@@ -10,37 +10,47 @@ int main( int argc, char** argv )
 {
     // 创建窗口 读取图片 显示原图
     namedWindow("<0>【原图】");
-    Mat srcImage = imread ("../laplacian.jpg");
+    Mat srcImage = imread ("../scharr.jpg");
     imshow("<0>【原图】", srcImage);
 
-    Mat grayImage, dstImage, absImage;
-    // 高斯滤波 消除噪声
-    GaussianBlur(srcImage, srcImage, Size(3, 3), 0, 0, BORDER_DEFAULT);
+    Mat grad_x, grad_y;
+    Mat abs_grad_x, abs_grad_y, dst;
 
-    // 转换为灰度图
-    cvtColor(srcImage, grayImage, COLOR_BGR2GRAY);
-
-    // 使用Laplacian变换
-    // 描述：使用拉普拉斯操作进行边缘检测
+    // 求X方向梯度
+    // 描述： Schaar()算子 边缘检测
     // 第一个参数： 原始输入图像
     // 第二个参数： 输出图像
-    // 第三个参数： 输出图像的深度
-    // 第四个参数： 用于计算二阶导数的滤波器的孔径尺寸大小，大小必须为正奇数，且必须大于1
-    // 第五个参数： 计算拉普拉斯的时候可选的比例因子，默认值1
-    // 第六个参数： 存入输出图像之前可选delta值，默认值0
-    // 第七个参数： 一般不关心，需要使用时，查看你文档
-    Laplacian(grayImage,
-              dstImage,
-              CV_16S,
-              3,
-              1,
-              0,
-              BORDER_DEFAULT);
+    // 第三个参数： 输出图像深度
+    // 第四个参数： X方向差分阶数
+    // 第五个参数： Y方向差分阶数
+    // 第六个参数： 计算导数时可选的缩放因子
+    // 第七个参数： 结果存入目标图之前可选的delta的值 默认值0
+    // 第八个参数： 不用关心，需要用时需要修改参数
+    Scharr(srcImage,
+           grad_x,
+           CV_16S,
+           1,
+           0,
+           1,
+           0,
+           BORDER_DEFAULT);
+    convertScaleAbs(grad_x, abs_grad_x);
 
-    // 计算绝对值，并将其格式转换位8bit
-    convertScaleAbs(dstImage, absImage);
+    // 求Y方向梯度
+    Scharr(srcImage,
+           grad_y,
+           CV_16S,
+           0,
+           1,
+           1,
+           0,
+           BORDER_DEFAULT);
+    convertScaleAbs(grad_y, abs_grad_y);
 
-    imshow("<1>【效果图】", absImage);
+    // 合并梯度
+    addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, dst);
+
+    imshow("<1>【效果图】", dst);
 
     waitKey(0);
 
