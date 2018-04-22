@@ -7,32 +7,49 @@
 using namespace cv;
 using namespace std;
 
+Mat g_mat;
+
+int g_RedNum   = 0;
+int g_GreenNum = 0;
+int g_BlueNum  = 0;
+void showColor () {
+    for (int x = 0; x < g_mat.rows; ++x) {
+        for (int y = 0; y < g_mat.cols; ++y) {
+            g_mat.at<Vec3b>(x, y)[0] = g_BlueNum;
+            g_mat.at<Vec3b>(x, y)[1] = g_GreenNum;
+            g_mat.at<Vec3b>(x, y)[2] = g_RedNum;
+        }
+    }
+
+    imshow("ColorBar", g_mat);
+}
+
+void on_Red (int , void *) {
+    showColor();
+}
+
+void on_Green (int , void *) {
+    showColor();
+}
+
+void on_Blue (int , void *) {
+    showColor();
+}
+
 int main (int argc, char *argv[]) {
-    // 创建窗口 读取图像 显示图像
-    namedWindow("<0>【原图】");
-    Mat srcImage = imread ("../floodfill.jpg");
-    imshow ("<0>【原图】", srcImage);
+    // 创建窗口
+    namedWindow("ColorBar");
+    g_mat = Mat(480, 480, CV_8UC3);
 
-    // 创建窗口 水漫填充操作 显示效果图
-    namedWindow("<1>水漫填充【效果图】");
-    //描述：水漫填充操作，用我们指定的颜色从种子点开始填充一个连接域
-    // 第一个参数： 需要水漫操作的图像，输入/输出1通道或3通道，8位或浮点图像，具体参数由之后的参数指明
-    // 第二个参数： 操作掩膜
-    // 第三个参数： 水漫填充算法的起点
-    // 第四个参数： 像素点被渲染的值，即在重绘区域像素的新值
-    // 第五个参数： 默认值0 用于设置floodFill函数将要重绘区域的最小边界举行矩形区域
-    // 第六个参数： 默认值Scalar() 表示当前观察像素值与其部件邻域像素值或者待加入该部件的种子之间的亮度或颜色之负差的最大值
-    // 第七个参数： 默认值Scalar() 表示当前观察像素值与其部件邻域像素值或者待加入该部件的种子之间的亮度或颜色之正差的最大值
-    // 第八个参数： 操作标志符 低八位：控制算法的连通性
-    // 重载函数的第一个函数
-    floodFill(srcImage,
-              Point(50, 300),
-              Scalar(0, 0, 255), NULL,
-              Scalar(20, 20, 20),
-              Scalar(20, 20, 20),
-              4);
+    // 创建轨迹条
+    createTrackbar("R", "ColorBar", &g_RedNum,255, on_Red);
+    createTrackbar("G", "ColorBar", &g_GreenNum, 255, on_Green);
+    createTrackbar("B", "ColorBar", &g_BlueNum, 255, on_Blue);
 
-    imshow("<1>水漫填充【效果图】", srcImage);
+    // 初始化轨迹条函数
+    on_Red(g_RedNum, NULL);
+    on_Green(g_GreenNum, NULL);
+    on_Blue(g_BlueNum, NULL);
 
     waitKey(0);
     return 0;
