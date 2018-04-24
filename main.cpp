@@ -6,83 +6,67 @@
 using namespace cv;
 using namespace std;
 
-// 定义全局变量
-Mat g_srcImage, g_srcGrayImage, g_dstImage;
-
-Mat g_cannyDetecteEdges;
-int g_cannyLowThreshold = 1;
-
-Mat g_sobelGradient_X, g_sobelGradient_Y;
-Mat g_sobelAbsGradient_X, g_sobelAbsGradient_Y;
-int g_sobelKernelSize = 1;
-
-Mat g_scharrGradient_X, g_scharrGradient_Y;
-Mat g_scharrAbsGradient_X, g_scharrAbsGradient_Y;
-
-// 回调函数
-void on_Canny (int , void *) {
-    // 滤波
-    blur(g_srcGrayImage, g_cannyDetecteEdges, Size(3, 3));
-
-    // 运行Canny算子
-    Canny(g_cannyDetecteEdges, g_cannyDetecteEdges, g_cannyLowThreshold, g_cannyLowThreshold * 3, 3);
-
-    g_dstImage = Scalar::all(0);
-    g_srcImage.copyTo(g_dstImage, g_cannyDetecteEdges);
-
-    // 显示
-    imshow("<1>Canny【效果图】", g_dstImage);
-}
-
-void on_Sobel (int , void *) {
-    // Sobel算子
-    Sobel(g_srcImage, g_sobelGradient_X, CV_16S, 1, 0, (g_sobelKernelSize << 1 | 1), 1, 0);
-    convertScaleAbs(g_sobelGradient_X, g_sobelAbsGradient_X);
-
-    Sobel(g_srcImage, g_sobelGradient_Y, CV_16S, 0, 1, (g_sobelKernelSize << 1 | 1), 1, 0);
-    convertScaleAbs(g_sobelGradient_Y, g_sobelAbsGradient_Y);
-
-    addWeighted(g_sobelAbsGradient_X, 0.5, g_sobelAbsGradient_Y, 0.5, 0, g_dstImage);
-
-    // 显示
-    imshow("<2>Sobel【效果图】", g_dstImage);
-}
-
-void Scharr1 () {
-    // 求X方向的梯度
-    Scharr(g_srcImage, g_scharrGradient_X, CV_16S, 1, 0, 1, 0);
-    convertScaleAbs(g_scharrGradient_X, g_scharrAbsGradient_X);
-
-    // 求Y方向的梯度
-    Scharr(g_srcImage, g_scharrGradient_Y, CV_16S, 0, 1, 1, 0);
-    convertScaleAbs(g_scharrGradient_Y, g_scharrAbsGradient_Y);
-
-    // 叠加
-    addWeighted(g_scharrAbsGradient_X, 0.5, g_scharrAbsGradient_Y, 0.5, 0, g_dstImage);
-
-    // 显示
-    imshow("<3>Scharr【效果图】", g_dstImage);
-}
-
 int main( int argc, char** argv )
 {
     namedWindow("<0>【原图】");
-    g_srcImage = imread ("../edges.jpg");
-    imshow("<0>【原图】", g_srcImage);
+    Mat srcImage = imread ("../houghLines.jpg");
+    imshow("<0>【原图】", srcImage);
 
-    g_dstImage.create(g_srcImage.size(), g_srcImage.type());
-    cvtColor(g_srcImage, g_srcGrayImage, COLOR_BGR2GRAY);
+    namedWindow("<1>临时图片");
+    namedWindow("<2>【效果图】");
 
-    namedWindow("<1>Canny【效果图】");
-    namedWindow("<2>Sobel【效果图】");
+    Mat tmpImage, dstImage;
+    // 边缘检测
+    // 滤波
+    Canny(srcImage, tmpImage, 50, 200, 3);
+    imshow("<1>临时图片", tmpImage);
+    // 边缘检测的图转换为灰度图
+    cvtColor(tmpImage, dstImage, COLOR_GRAY2BGR);
 
-    createTrackbar("参数值", "<1>Canny【效果图】", &g_cannyLowThreshold, 120, on_Canny);
-    createTrackbar("参数值", "<2>Sobel【效果图】", &g_sobelKernelSize, 3, on_Sobel);
+    // 进行霍夫变换
+    vector<Vec2f> lines;
+    // 描述：标准霍夫变换
+    // 第一个参数： 输入图像
+    // 第二个参数： 用于存放霍夫变换检测到的线条输出矢量 每条线条有两个参数(rho, theta),rho离原点坐标的距离
+    //                                                                       theta弧度线条转换的角度
+    // 第三个参数： 以像素为单位的距离精度，
+    // 第四个参数： 以弧度为单位的角度京精度
+    // 第五个参数： 累加平面的阀值参数，即识别某一条直线时，他在累加平面中必须达到的值
+    // 第六个参数： 默认值0
+    // 第七个参数： 默认值0
+    HoughLines(tmpImage,
+               lines,
+               1,
+               CV_PI / 180,
+               300,
+               0,
+               0,
+               0);
 
-    on_Canny(0, NULL);
-    on_Sobel(0, NULL);
-    Scharr1();
+    size_t i;
+    for (i = 0; i < lines.size(); ++i) {
+        float rho = lines[i][0];
+        float theta = lines[i][1];
+        Point pt1, pt2;
+        double a = cos (theta);
+        double b = sin (theta);
+        double x0 = a * rho;
+        double y0 = b * rho;
 
+        pt1.x = cvRound(x0 + 1000 * (-b));
+        pt1.y = cvRound(y0 + 1000 * (a));
+        pt2.x = cvRound(x0 - 1000 * (-b));
+        pt2.y = cvRound(y0 - 1000 * (a));
+
+        cout << "pt1(" << pt1.x << ", " << pt1.y << ")" << endl;
+        cout << "pt2(" << pt2.x << ", " << pt2.y << ")" << endl;
+
+        line(dstImage, pt1, pt2, Scalar(55, 100, 195), 1, LINE_AA);
+    }
+    cout << "i = " << i << endl;
+
+//    imshow("<1>临时图片", tmpImage);
+    imshow("<2>【效果图】", dstImage);
     waitKey(0);
 
     return 0;
