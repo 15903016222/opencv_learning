@@ -17,10 +17,10 @@ int main( int argc, char** argv )
 
     Mat tmpImage, dstImage;
     // 边缘检测
-    // 滤波
+    // 滤波 边缘检测
     Canny(srcImage, tmpImage, 50, 200, 3);
     imshow("<1>临时图片", tmpImage);
-    // 边缘检测的图转换为灰度图
+    // 边缘检测的图转换为灰度图 需再次转换为彩色图
     cvtColor(tmpImage, dstImage, COLOR_GRAY2BGR);
 
     // 进行霍夫变换
