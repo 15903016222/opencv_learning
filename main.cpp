@@ -6,53 +6,46 @@
 using namespace cv;
 using namespace std;
 
-// 定义全局变量
-Mat g_srcImage, g_dstImage, g_midImage;
-
-// 接受TrackBar位置
-int g_nthreashold = 100;
-int g_ncanny = 50;
-
-void on_Hough (int , void *)
-{
-    Mat dstImage = g_dstImage.clone();
-    vector<Vec4i> lines;
-    // 描述： 霍夫线性变换
-    // 第一个参数： 输入图像
-    // 第二个参数： 存放检测到线的存储器
-    // 第三个参数： 以像素为单位的最小精度
-    // 第四个参数： 弧度
-    // 第五个参数： 检测到累加器的阀值
-    // 第六个参数： 最小长度
-    // 第七个参数： 默认参数
-    HoughLinesP(g_midImage,
-                lines,
-                1,
-                CV_PI / 180,
-                g_nthreashold + 1,
-                20,
-                0);
-    for (size_t i = 0; i < lines.size(); ++i) {
-        Vec4i l = lines[i];
-        line(dstImage, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 1);
-    }
-    imshow("<1>【效果图】", dstImage);
-    cout << "size = " << lines.size() << endl;
-}
-
 int main( int argc, char** argv )
 {
     namedWindow("<0>【原图】");
     namedWindow("<1>【效果图】");
-    Mat g_srcImage = imread ("../hough.jpg");
-    imshow("<0>【原图】", g_srcImage);
+    Mat srcImage = imread ("../remap.jpg");
+    imshow("<0>【原图】", srcImage);
 
-    createTrackbar("位置", "<1>【效果图】", &g_nthreashold, 200, on_Hough, 0);
+    Mat dstImage;
+    Mat map_x, map_y;
+    dstImage.create(srcImage.size(), srcImage.type());
+    map_x.create(srcImage.size(), CV_32FC1);
+    map_y.create(srcImage.size(), CV_32FC1);
 
-    Canny(g_srcImage, g_midImage, 100, 200, 3);
-    cvtColor(g_midImage, g_dstImage, COLOR_GRAY2BGR);
+    cout << "CV_32FC1 = " << CV_32FC1 << endl
+         << "type = " << srcImage.type() << endl
+         << "size = " << srcImage.size() << endl;
 
-    on_Hough(g_nthreashold, NULL);
+    for (int j = 0; j < srcImage.rows; ++j) {
+        for (int i = 0; i < srcImage.cols; ++i) {
+            map_x.at<float>(j, i) = static_cast<float>(i);
+            map_y.at<float>(j, i) = static_cast<float>(srcImage.rows - j);
+        }
+    }
+    // 描述： 根据映射的方式，将图像进行重映射几何变换
+    // 第一个参数： 输入图像
+    // 第二个参数： 输出图像
+    // 第三个参数： 表示点(x, y)的一个映射
+    // 第四个参数： 与上一个相同
+    // 第五个参数： 插值方式 INTER_LINEAR双线型插值
+    // 第六个参数： 边界模式
+    // 第七个参数： 使用默认值Scalar(0, 0, 0)
+    remap(srcImage,
+          dstImage,
+          map_x,
+          map_y,
+          CV_INTER_LINEAR,
+          BORDER_CONSTANT,
+          Scalar(0, 0, 0));
+
+    imshow("<1>【效果图】", dstImage);
 
     waitKey(0);
 
