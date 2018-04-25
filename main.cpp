@@ -16,7 +16,8 @@ void on_Remap (int , void *) {
         for (int i = 0; i < g_srcImage.cols; ++i) {
             switch (g_ndirection) {
             case 0:
-                // 原图
+                // 原图 必须是float型，因为rows和cols的数量会超过255,
+                // 因为这个g_map_x, g_map_y只表示坐标位置信息
                 g_map_x.at<float>(j, i) = static_cast<float>(i);
                 g_map_y.at<float>(j, i) = static_cast<float>(j);
                 break;
@@ -76,7 +77,9 @@ int main( int argc, char** argv )
 
     cout << "CV_32FC1 = " << CV_32FC1 << endl
          << "type = " << g_srcImage.type() << endl
-         << "size = " << g_srcImage.size() << endl;
+         << "size = " << g_srcImage.size() << endl
+         << "channel = " << g_srcImage.channels() << endl
+         << "map.channels = " << g_map_x.channels() << endl;
 
     waitKey(0);
 
