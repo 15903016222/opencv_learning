@@ -6,29 +6,40 @@
 using namespace cv;
 using namespace std;
 
-int main( int argc, char** argv )
-{
-    namedWindow("<0>【原图】");
-    namedWindow("<1>【效果图】");
-    Mat srcImage = imread ("../remap.jpg");
-    imshow("<0>【原图】", srcImage);
+Mat g_srcImage, g_dstImage;
+Mat g_map_x, g_map_y;
+int g_ndirection = 0;
 
-    Mat dstImage;
-    Mat map_x, map_y;
-    dstImage.create(srcImage.size(), srcImage.type());
-    map_x.create(srcImage.size(), CV_32FC1);
-    map_y.create(srcImage.size(), CV_32FC1);
+void on_Remap (int , void *) {
 
-    cout << "CV_32FC1 = " << CV_32FC1 << endl
-         << "type = " << srcImage.type() << endl
-         << "size = " << srcImage.size() << endl;
+    for (int j = 0; j < g_srcImage.rows; ++j) {
+        for (int i = 0; i < g_srcImage.cols; ++i) {
+            switch (g_ndirection) {
+            case 0:
+                // 原图
+                g_map_x.at<float>(j, i) = static_cast<float>(i);
+                g_map_y.at<float>(j, i) = static_cast<float>(j);
+                break;
+            case 1:
+                // 上下颠倒
+                g_map_x.at<float>(j, i) = static_cast<float>(i);
+                g_map_y.at<float>(j, i) = static_cast<float>(g_srcImage.rows - j);
+                break;
+            case 2:
+                // 左右颠倒
+                g_map_x.at<float>(j, i) = static_cast<float>(g_srcImage.cols - i);
+                g_map_y.at<float>(j, i) = static_cast<float>(j);
+                break;
+            case 3:
+                // 上下 左右颠倒
+                g_map_x.at<float>(j, i) = static_cast<float>(g_srcImage.cols - i);
+                g_map_y.at<float>(j, i) = static_cast<float>(g_srcImage.rows - j);
+                break;
+            }
 
-    for (int j = 0; j < srcImage.rows; ++j) {
-        for (int i = 0; i < srcImage.cols; ++i) {
-            map_x.at<float>(j, i) = static_cast<float>(i);
-            map_y.at<float>(j, i) = static_cast<float>(srcImage.rows - j);
         }
     }
+
     // 描述： 根据映射的方式，将图像进行重映射几何变换
     // 第一个参数： 输入图像
     // 第二个参数： 输出图像
@@ -37,15 +48,35 @@ int main( int argc, char** argv )
     // 第五个参数： 插值方式 INTER_LINEAR双线型插值
     // 第六个参数： 边界模式
     // 第七个参数： 使用默认值Scalar(0, 0, 0)
-    remap(srcImage,
-          dstImage,
-          map_x,
-          map_y,
+    remap(g_srcImage,
+          g_dstImage,
+          g_map_x,
+          g_map_y,
           CV_INTER_LINEAR,
           BORDER_CONSTANT,
           Scalar(0, 0, 0));
 
-    imshow("<1>【效果图】", dstImage);
+    imshow("<1>【效果图】", g_dstImage);
+}
+
+int main( int argc, char** argv )
+{
+    namedWindow("<0>【原图】");
+    namedWindow("<1>【效果图】");
+    g_srcImage = imread ("../remap.jpg");
+    imshow("<0>【原图】", g_srcImage);
+
+    g_dstImage.create(g_srcImage.size(), g_srcImage.type());
+    g_map_x.create(g_srcImage.size(), CV_32FC1);
+    g_map_y.create(g_srcImage.size(), CV_32FC1);
+
+    createTrackbar("方向", "<1>【效果图】", &g_ndirection, 3, on_Remap, 0);
+
+    on_Remap(g_ndirection, NULL);
+
+    cout << "CV_32FC1 = " << CV_32FC1 << endl
+         << "type = " << g_srcImage.type() << endl
+         << "size = " << g_srcImage.size() << endl;
 
     waitKey(0);
 
