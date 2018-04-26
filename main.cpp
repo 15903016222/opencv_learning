@@ -6,81 +6,63 @@
 using namespace cv;
 using namespace std;
 
-Mat g_srcImage, g_dstImage;
-Mat g_map_x, g_map_y;
-int g_ndirection = 0;
-
-void on_Remap (int , void *) {
-
-    for (int j = 0; j < g_srcImage.rows; ++j) {
-        for (int i = 0; i < g_srcImage.cols; ++i) {
-            switch (g_ndirection) {
-            case 0:
-                // 因为这个g_map_x, g_map_y只表示坐标位置信息
-                g_map_x.at<float>(j, i) = static_cast<float>(i);
-                g_map_y.at<float>(j, i) = static_cast<float>(j);
-                break;
-            case 1:
-                // 上下颠倒
-                g_map_x.at<float>(j, i) = static_cast<float>(i);
-                g_map_y.at<float>(j, i) = static_cast<float>(g_srcImage.rows - j);
-                break;
-            case 2:
-                // 左右颠倒
-                g_map_x.at<float>(j, i) = static_cast<float>(g_srcImage.cols - i);
-                g_map_y.at<float>(j, i) = static_cast<float>(j);
-                break;
-            case 3:
-                // 上下 左右颠倒
-                g_map_x.at<float>(j, i) = static_cast<float>(g_srcImage.cols - i);
-                g_map_y.at<float>(j, i) = static_cast<float>(g_srcImage.rows - j);
-                break;
-            }
-
-        }
-    }
-
-    // 描述： 根据映射的方式，将图像进行重映射几何变换
-    // 第一个参数： 输入图像
-    // 第二个参数： 输出图像
-    // 第三个参数： 表示点(x, y)的一个映射,
-    //            数据类型只能是CV_16SC2, CV_32FC1, CV_32FC2类型的X值
-    // 第四个参数： 表示点(x, y)的一个映射
-    //            数据类型只能是CV_16UC1, CV_32FC1类型的X值
-    // 第五个参数： 插值方式 INTER_LINEAR双线型插值
-    // 第六个参数： 边界模式
-    // 第七个参数： 使用默认值Scalar(0, 0, 0)
-    remap(g_srcImage,
-          g_dstImage,
-          g_map_x,
-          g_map_y,
-          CV_INTER_LINEAR,
-          BORDER_CONSTANT,
-          Scalar(0, 0, 0));
-
-    imshow("<1>【效果图】", g_dstImage);
-}
-
 int main( int argc, char** argv )
 {
     namedWindow("<0>【原图】");
-    namedWindow("<1>【效果图】");
-    g_srcImage = imread ("../remap.jpg");
-    imshow("<0>【原图】", g_srcImage);
+    Mat srcImage = imread ("../warp.jpg");
+    imshow("<0>【原图】", srcImage);
 
-    g_dstImage.create(g_srcImage.size(), g_srcImage.type());
-    g_map_x.create(g_srcImage.size(), CV_32FC1);
-    g_map_y.create(g_srcImage.size(), CV_32FC1);
+    // 参数准备
+    Point2f srcTraingle[3];
+    Point2f dstTraingle[3];
 
-    createTrackbar("方向", "<1>【效果图】", &g_ndirection, 3, on_Remap, 0);
+    Mat rotMat (2, 3, CV_32FC1);
+    Mat warpMat (2, 3, CV_32FC1);
+    Mat dstWarpImage, dstWarpRotateImage;
 
-    on_Remap(g_ndirection, NULL);
+    dstWarpImage = Mat::zeros(srcImage.rows, srcImage.cols, srcImage.type());
 
-    cout << "CV_32FC1 = " << CV_32FC1 << endl
-         << "type = " << g_srcImage.type() << endl
-         << "size = " << g_srcImage.size() << endl
-         << "channel = " << g_srcImage.channels() << endl
-         << "map.channels = " << g_map_x.channels() << endl;
+    srcTraingle[0] = Point2f(0, 0);
+    srcTraingle[1] = Point2f(static_cast<float>(srcImage.cols - 1), 0);
+    srcTraingle[2] = Point2f(0, static_cast<float>(srcImage.rows - 1));
+
+    dstTraingle[0] = Point2f(static_cast<float>(srcImage.cols * 0.0),
+                             static_cast<float>(srcImage.rows * 0.33));
+    dstTraingle[1] = Point2f(static_cast<float>(srcImage.cols * 0.65),
+                             static_cast<float>(srcImage.rows * 0.35));
+    dstTraingle[2] = Point2f(static_cast<float>(srcImage.cols * 0.15),
+                             static_cast<float>(srcImage.rows * 0.6));
+
+    // 求得放射变换矩阵
+    warpMat = getAffineTransform(srcTraingle, dstTraingle);
+
+    // 对原图像应用刚刚求得的放射映射
+    // 描述： 对图像放射变换操作
+    // 第一个参数： 输入图像
+    // 第二个参数： 输出图像
+    // 第三个参数： 2X3矩阵
+    // 第四个参数： 输出图像的尺寸
+    // 第五个参数： 线性插值
+    // 第六个参数： 边界模式
+    warpAffine(srcImage,
+               dstWarpImage,
+               warpMat,
+               dstWarpImage.size(),
+               INTER_LINEAR,
+               BORDER_CONSTANT);
+
+    // 对图像进行缩放后再变换
+    Point center = Point(dstWarpImage.cols / 2, dstWarpImage.rows / 2);
+    double angle = -30.0;
+    double scale = 0.8;
+
+    // 获取变换矩阵
+    rotMat = getRotationMatrix2D(center, angle, scale);
+    // 对图像按照变换矩阵，进行放射映射变换操作
+    warpAffine(dstWarpImage, dstWarpRotateImage, rotMat, dstWarpImage.size());
+
+    imshow("<1>放射映射【效果图】", dstWarpImage);
+    imshow("<2>图像变换【效果图】", dstWarpRotateImage);
 
     waitKey(0);
 
