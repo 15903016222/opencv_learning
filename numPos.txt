@@ -1,0 +1,2 @@
+contain  >=  (numPos + (numStages-1) * (1 - minHitRate) * numPos) + S
+正样本总数               训练深度                                 负样本总数
