@@ -6,61 +6,62 @@
 using namespace cv;
 using namespace std;
 
-int main( int argc, char** argv )
-{
-    namedWindow("<0>【原图】");
-    Mat srcImage = imread ("../contours.jpg", 0);
-    imshow("<0>【原图】", srcImage);
+#define WINDOW_NAME1 "【原始图】"
+#define WINDOW_NAME2 "【轮廓图】"
 
-    namedWindow("<1>【效果图】");
-    Mat dstImage = Mat::zeros(srcImage.size(), CV_8UC3);
+// 定义全局变量
+Mat g_srcImage;
+Mat g_grayImage;
+int g_nThresh = 80;
+int g_nThresh_max = 255;
+RNG g_rng(12345);
+Mat g_cannyMat_output;
+vector<vector<Point> > g_vContours;
+vector<Vec4i> g_vHierarchy;
 
-    srcImage = srcImage > 119;
-    imshow("取阀值后的原始图", srcImage);
-
-    // 定义轮廓和层次结构
-    vector<vector<Point> > contours;
-    vector<Vec4i> hierarchy;
-
+// 回调函数
+void on_ThreshChange(int , void *) {
+    // 边缘检测
+    Canny(g_grayImage, g_cannyMat_output, g_nThresh, g_nThresh < 1, 3);
     // 查找轮廓
-    // 描述： 用于在二值图像中寻找轮廓
-    // 第一个参数： 输入图像，需为8位的单通道图像，即灰度图
-    // 第二个参数： 存放检测到的轮廓 每个轮廓存储为一个点向量，类型vector<vector<Point> >
-    // 第三个参数： 可选输出向量，包含图像的拓布信息，每个轮廓包含4个hierarchy[i][0] ~ hierarchy[i][3]
-    //            后一个轮廓，前一个轮廓， 父轮廓，内嵌轮廓编号
-    // 第四个参数： 轮廓检测模式，
-    // 第五个参数： 轮廓的近似办法
-    findContours(srcImage,
-                 contours,
-                 hierarchy,
-                 RETR_CCOMP,
-                 CHAIN_APPROX_SIMPLE);
-
-    // 遍历所有顶层的轮廓
-    int index = 0;
-    for ( ; index >= 0; index = hierachy[index][0]) {
-        Scalar color(rand() & 255, rand() & 255, rand() & 255);
-        // 描述： 绘制轮廓信息
-        // 第一个参谋： 目标图像
-        // 第二个参数： 输入的轮廓
-        // 第三个参数： 轮廓绘制的只是变量
-        // 第四个参数： 绘制轮廓的颜色
-        // 第五个参数： 轮廓线条的粗细度
-        // 第六个参数： 线条类型
-        // 第七个参数： 可选的层次结构
-        // 第八个参数： 绘制轮廓的最大等级
-        // 第九个参数： 可选轮廓的偏移参数
-        drawContours(dstImage,
-                     contours,
-                     index,
+    findContours(g_cannyMat_output,
+                 g_vContours,
+                 g_vHierarchy,
+                 RETR_TREE,
+                 CHAIN_APPROX_SIMPLE, Point(0, 0));
+    Mat drawing = Mat::zeros(g_cannyMat_output.size(), CV_8UC3);
+    for (int i = 0; i < g_vHierarchy.size(); ++i) {
+        Scalar color = Scalar(g_rng.uniform(0, 255),
+                              g_rng.uniform(0, 255),
+                              g_rng.uniform(0, 255));
+        // 绘制轮廓
+        drawContours(drawing,
+                     g_vContours,
+                     i,
                      color,
-                     FILLED,
-                     LINE_8,
-                     hierarchy);
+                     2,
+                     8,
+                     g_vHierarchy,
+                     0,
+                     Point());
     }
 
-    // 显示最后的轮廓图
-    imshow("<1>【效果图】", dstImage);
+    imshow(WINDOW_NAME2, drawing);
+}
+
+int main( int argc, char** argv )
+{
+    namedWindow(WINDOW_NAME1);
+    g_srcImage = imread ("../google.jpg", 1);
+    imshow(WINDOW_NAME1, g_srcImage);
+
+    cvtColor(g_srcImage, g_grayImage, COLOR_BGR2GRAY);
+    // 平滑处理
+    blur(g_grayImage, g_grayImage, Size(3, 3));
+    // 创建轨迹条
+    createTrackbar("Canny阀值", WINDOW_NAME1, &g_nThresh, g_nThresh_max, on_ThreshChange);
+    // 初始化回调函数
+    on_ThreshChange(g_nThresh, NULL);
 
     waitKey(0);
 
