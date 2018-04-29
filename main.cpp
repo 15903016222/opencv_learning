@@ -28,10 +28,14 @@ int main( int argc, char** argv )
             points.push_back(point);
         }
 
-        // 对给定的2D点集，寻找最小面积的包围矩形
-        RotatedRect box = minAreaRect(Mat(points));
-        Point2f vertex[4];
-        box.points(vertex);
+        // 对给定的2D点集，寻找最小面积的包围圆
+        Point2f center;
+        float radius = 0;
+        // 描述： 绘制使用最小面积的圆包含点集
+        // 第一个参数： 需要包围的点集
+        // 第二个参数： 需要包围的圆心
+        // 第三个参数： 圆的半径
+        minEnclosingCircle(Mat(points), center, radius);
 
         // 绘制出随机颜色的点
         image = Scalar::all(0);
@@ -47,9 +51,14 @@ int main( int argc, char** argv )
         }
 
         // 绘制最小面积的包围矩形
-        for (int i = 0; i < 4; ++i) {
-            line(image, vertex[i], vertex[(i + 1) % 4], Scalar(100, 200, 211), 2, LINE_AA);
-        }
+        circle(image,
+               center,
+               radius,
+               Scalar(rng.uniform(0, 255),
+                      rng.uniform(0, 255),
+                      rng.uniform(0, 255)),
+               2,
+               LINE_AA);
 
         // 显示窗口
         imshow(WINDOW_NAME2, image);
