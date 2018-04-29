@@ -9,69 +9,57 @@ using namespace std;
 #define WINDOW_NAME1 "【原始图】"
 #define WINDOW_NAME2 "【轮廓图】"
 
-// 描述全局变量
-Mat g_srcImage, g_grayImage;
-int g_nThresh = 50;
-int g_maxThresh = 255;
-RNG g_rng(12345);
-Mat srcImage_copy = g_srcImage.clone();
-Mat g_thresholdImage_output;
-vector<vector<Point> > g_vContours;
-vector<Vec4i> g_vHierarchy;
-
-void on_ThreshChange(int , void *) {
-    // 对图像进行二值化，控制阀值
-    threshold(g_grayImage, g_thresholdImage_output, g_nThresh, 255, THRESH_BINARY);
-    // 寻找轮廓
-    findContours(g_thresholdImage_output,
-                 g_vContours,
-                 g_vHierarchy,
-                 RETR_TREE,
-                 CHAIN_APPROX_SIMPLE);
-    // 遍历每个轮廓
-    vector<vector<Point> > hull(g_vContours.size());
-    for (unsigned int i = 0; i < hull.size(); ++i) {
-        convexHull(Mat(g_vContours[i]), hull[i], false);
-    }
-
-    // 绘制轮廓和凸包
-    Mat drawing = Mat::zeros(g_thresholdImage_output.size(), CV_8UC3);
-    for (int i = 0; i < g_vContours.size(); ++i) {
-        Scalar color = Scalar(g_rng.uniform(0, 255),
-                              g_rng.uniform(0, 255),
-                              g_rng.uniform(0, 255));
-        drawContours(drawing,
-                     g_vContours,
-                     i,
-                     color,
-                     1,
-                     LINE_AA);
-        drawContours(drawing,
-                     hull,
-                     i,
-                     color,
-                     1,
-                     LINE_AA);
-    }
-    cout << "count = " << g_vContours.size() << endl
-         << "hull  = " << hull.size() << endl;
-
-    imshow(WINDOW_NAME2, drawing);
-}
-
 int main( int argc, char** argv )
 {
-    g_srcImage = imread("../converx.jpg", 1);
+    Mat image(600, 600, CV_8UC3);
+    RNG &rng = theRNG();
 
-    cvtColor(g_srcImage, g_grayImage, COLOR_BGR2GRAY);
-    namedWindow(WINDOW_NAME1);
-    imshow(WINDOW_NAME1, g_srcImage);
+    while (1) {
+        // 参数初始化
+        int cout = rng.uniform(3, 103);
+        vector<Point> points;
 
-    createTrackbar("阀值", WINDOW_NAME1, &g_nThresh, g_maxThresh, on_ThreshChange);
+        // 随机生成点坐标
+        for (int i = 0; i < cout; ++i) {
+            Point point;
 
-    on_ThreshChange(g_nThresh, NULL);
+            point.x = rng.uniform(image.cols / 4, image.cols * 3 / 4);
+            point.y = rng.uniform(image.rows / 4, image.rows * 3 / 4);
+            points.push_back(point);
+        }
 
-    waitKey(0);
+        // 对给定的2D点集，寻找最小面积的包围矩形
+        RotatedRect box = minAreaRect(Mat(points));
+        Point2f vertex[4];
+        box.points(vertex);
+
+        // 绘制出随机颜色的点
+        image = Scalar::all(0);
+        for (int i = 0; i < cout; ++i) {
+            circle(image,
+                   points[i],
+                   3,
+                   Scalar(rng.uniform(0, 255),
+                          rng.uniform(0, 255),
+                          rng.uniform(0, 255)),
+                   FILLED,
+                   LINE_AA);
+        }
+
+        // 绘制最小面积的包围矩形
+        for (int i = 0; i < 4; ++i) {
+            line(image, vertex[i], vertex[(i + 1) % 4], Scalar(100, 200, 211), 2, LINE_AA);
+        }
+
+        // 显示窗口
+        imshow(WINDOW_NAME2, image);
+
+        // 退出
+        char key = (char)waitKey();
+        if (27 == key || 'q' == key || 'Q' == key) {
+            break;
+        }
+    }
 
     return 0;
 }
