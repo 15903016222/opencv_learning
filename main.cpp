@@ -9,59 +9,68 @@ using namespace std;
 #define WINDOW_NAME1 "【原始图】"
 #define WINDOW_NAME2 "【轮廓图】"
 
-// 定义全局变量
-Mat g_srcImage;
-Mat g_grayImage;
-int g_nThresh = 80;
-int g_nThresh_max = 255;
-RNG g_rng(12345);
-Mat g_cannyMat_output;
-vector<vector<Point> > g_vContours;
-vector<Vec4i> g_vHierarchy;
-
-// 回调函数
-void on_ThreshChange(int , void *) {
-    // 边缘检测
-    Canny(g_grayImage, g_cannyMat_output, g_nThresh, g_nThresh < 1, 3);
-    // 查找轮廓
-    findContours(g_cannyMat_output,
-                 g_vContours,
-                 g_vHierarchy,
-                 RETR_TREE,
-                 CHAIN_APPROX_SIMPLE, Point(0, 0));
-    Mat drawing = Mat::zeros(g_cannyMat_output.size(), CV_8UC3);
-    for (int i = 0; i < g_vHierarchy.size(); ++i) {
-        Scalar color = Scalar(g_rng.uniform(0, 255),
-                              g_rng.uniform(0, 255),
-                              g_rng.uniform(0, 255));
-        // 绘制轮廓
-        drawContours(drawing,
-                     g_vContours,
-                     i,
-                     color,
-                     2,
-                     8,
-                     g_vHierarchy,
-                     0,
-                     Point());
-    }
-
-    imshow(WINDOW_NAME2, drawing);
-}
-
 int main( int argc, char** argv )
 {
     namedWindow(WINDOW_NAME1);
-    g_srcImage = imread ("../google.jpg", 1);
-    imshow(WINDOW_NAME1, g_srcImage);
+    Mat image(600, 600, CV_8UC3);
+    RNG rng = theRNG();
 
-    cvtColor(g_srcImage, g_grayImage, COLOR_BGR2GRAY);
-    // 平滑处理
-    blur(g_grayImage, g_grayImage, Size(3, 3));
-    // 创建轨迹条
-    createTrackbar("Canny阀值", WINDOW_NAME1, &g_nThresh, g_nThresh_max, on_ThreshChange);
-    // 初始化回调函数
-    on_ThreshChange(g_nThresh, NULL);
+    while (1) {
+        // 参数设置
+        char key;
+        int  count = (unsigned)rng % 100 + 3;
+        vector<Point> points;
+
+        for (int i = 0; i < count; ++i) {
+            Point point;
+            point.x = rng.uniform(image.cols / 4, image.rows * 3 / 4);
+            point.y = rng.uniform(image.rows / 4, image.rows * 3 / 4);
+            points.push_back(point);
+        }
+
+        // 检测凸包
+        vector<int> hull;
+        // 描述：寻找凸包点
+        // 第一个参数： 输入二维点集
+        // 第二个参数： 输出参数，后面找到凸包
+        // 第三个参数： 凸包的方向，为真时，顺时针方向，
+        // 第四个参数： 操作标识符，默认值为true，为真时，返回凸包各点的指数
+        convexHull(Mat(points),
+                   hull,
+                   true,
+                   true);
+
+        image = Scalar::all(0);
+        for (int i = 0; i < count; ++i) {
+            circle(image,
+                   points[i],
+                   3,
+                   Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255)),
+                   FILLED,
+                   LINE_AA);
+        }
+
+        // 准备绘制凸边的参数
+        int hullcount = (int)hull.size();
+        Point point0 = points[hull[hullcount - 1]];
+
+        // 绘制凸边
+        for (int i = 0; i < hullcount; ++i) {
+            Point point = points[hull[i]];
+            line(image, point0, point, Scalar(255, 255, 255), 2, LINE_AA);
+            point0 = point;
+        }
+        cout << "hullcount: " << hullcount << endl;
+
+        // 显示凸边
+        imshow(WINDOW_NAME1, image);
+
+        // 退出
+        key = (char)waitKey();
+        if (key == 27 || key == 'q' || key == 'Q') {
+            break;
+        }
+    }
 
     waitKey(0);
 
