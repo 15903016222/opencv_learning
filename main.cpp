@@ -24,6 +24,8 @@ Mat sobeproc(const Mat &src);
 void on_OpenClose(int , void *);
 void on_Trackbar(int, void *);
 
+bool verifySizes(RotatedRect mr);
+
 int main (int argc, char *argv[])
 {
     // 读取原图 显示
@@ -82,5 +84,58 @@ void on_OpenClose(int, void *)
         morphologyEx(g_threshImage, g_closeImage, MORPH_CLOSE, element);
     }
 
-    imshow(WINDOW_NAME1, g_closeImage);
+    // 查找轮廓
+    // 准备参数
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+
+    findContours(g_closeImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));
+    vector<vector<Point> > contours_poly(contours.size());
+    vector<Rect> boundRect(contours.size());
+
+    for (unsigned int i = 0; i < contours.size(); ++i) {
+        approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
+        boundRect[i] = boundingRect(Mat(contours_poly[i]));
+    }
+
+    Mat drawing = Mat::zeros(g_closeImage.size(), CV_8UC3);
+    for (unsigned int i = 0; i < contours.size(); ++i) {
+//        Scalar color = Scalar(theRNG().uniform(0, 255),
+//                              theRNG().uniform(0, 255),
+//                              theRNG().uniform(0, 255));
+        Scalar color = Scalar(255, 255, 255);
+        drawContours(drawing, contours_poly, i, color, 1, 8, vector<Vec4i>(), 0, Point());
+        rectangle(drawing, boundRect[i].tl(), boundRect[i].br(), color, 1, 4, 0);
+    }
+
+    imshow(WINDOW_NAME1, drawing);
+}
+
+//-----------------------------------【verifySizes函数】----------------------------------
+//		描述：判断是否为车牌区域
+//-----------------------------------------------------------------------------------------------
+bool verifySizes(RotatedRect mr)
+{
+    float error = 0.4;
+    //Spain car plate size: 52x11 scale 4,7272
+    float scale = 3.667;
+    //Set a min and max area. All other patchs are discarded
+    int min = 150 * scale *100; // minimum area
+    int max = 200 * scale * 200; // maximum area
+                                 //Get only patchs that match to a respect ratio.
+    float rmin = scale - scale*error;
+    float rmax = scale + scale*error;
+
+    int area = mr.size.height * mr.size.width;
+    float r = (float)mr.size.width / (float)mr.size.height;
+    if (r<1)
+        r = (float)mr.size.height / (float)mr.size.width;
+
+    if ((area < min || area > max) || (r < rmin || r > rmax)) {
+        return false;
+    }
+    else {
+        return true;
+    }
+
 }
