@@ -14,39 +14,7 @@ Mat g_srcImage, g_grayImage, g_gaussianImage, g_threshImage;
 Mat g_edge;
 int g_nThresh = 165;
 int g_nMaxThresh = 255;
-int g_nChangeNum = 16; // 像素变化的次数
-
-bool verifySizes(RotatedRect mr)
-{
-    float error = 0.3;
-    //Spain car plate size: 52x11 aspect 4,7272
-    //China car plate size: 440mm*140mm，aspect 3.142857
-    float aspect = 3.142857;
-    //Set a min and max area. All other patchs are discarded
-    int min= 1*aspect*1; // minimum area
-    int max= 2000*aspect*2000; // maximum area
-    //int min = 44 * 14 * m_verifyMin; // minimum area
-    //int max = 44 * 14 * m_verifyMax; // maximum area
-                                     //Get only patchs that match to a respect ratio.
-    float rmin = aspect - aspect*error;
-    float rmax = aspect + aspect*error;
-
-    int area = mr.size.height * mr.size.width;
-    float r = (float)mr.size.width / (float)mr.size.height;
-    if (r < 1)
-    {
-        r = (float)mr.size.height / (float)mr.size.width;
-    }
-
-    if ((area < min || area > max) || (r < rmin || r > rmax))
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
-}
+int g_nChangeNum = 0; // 像素变化的次数
 
 void on_callback(int , void *)
 {
@@ -76,72 +44,72 @@ void on_callback(int , void *)
 //    //合并
 //    addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, g_edge);
 
-
-//    // 闭操作
-//    Mat closeImage;
-//    Mat element = getStructuringElement(MORPH_RECT, Size(3, 3));
-//    morphologyEx(g_edge, closeImage, MORPH_CLOSE, element);
-
-//    // 定位车牌
-//    for (int y = 0; y < closeImage.rows; ++y) {
-//        int flags = 0;
-//        uchar *data = closeImage.ptr<uchar>(y);
-//        for (int x = 0; x < closeImage.cols - 1; ++x) {
-//            if (0 != data[x] - data[x + 1]) {
-//                ++flags;
-//            }
-//        }
-//        if (flags >= 9) {
-//           cout << "y: " << y << endl;
-//        }
-//    }
-
     Mat dstImage(g_edge.size(), g_edge.type());
+    int rows[562] = {0};
     for (int y = 0; y < g_edge.rows; ++y) {
         int flags = 0;
         uchar *data = g_edge.ptr<uchar>(y);
-        for (int x = 0; x < g_edge.cols; ++x) {
-            if (255 == data[x]) {
+        for (int x = 0; x < g_edge.cols - 1; ++x) {
+            if (0 != data[x] - data[x + 1]) {
                 ++flags;
             }
-        }
-        if (flags > g_nChangeNum) {
-            for (int i = 0; i < g_edge.cols; ++i) {
-                dstImage.at<uchar>(y, i) = data[i];
+            if (flags > 18) {
+                rows[y] = 1;
             }
-            cout << "y: " << y << endl;
+            else {
+                rows[y] = 0;
+            }
         }
     }
+
+    int same[562][3] = {0};
+    int flag  = 0;
+    int count = 0;
+    for (int i = 0; i < g_edge.rows - 1; ++i) {
+        if ((0 == rows[i] - rows[i + 1]) && (1 == rows[i])) {
+            if (!flag) {
+                same[count][1] = i;
+            }
+            else {
+                same[count][2] = i;
+            }
+            same[count][0] = ++flag;
+        }
+        else {
+            flag = 0;
+            if (same[count][0]) {
+                ++count;
+            }
+        }
+    }
+
+    int max = 0;
+    int tmp = 0;
+    for (int i = 0; i < 562; ++i) {
+        if (max <= same[i][0]) {
+            max = same[i][0];
+            tmp = i;
+        }
+    }
+
+    for (int y = 0; y < g_edge.rows; ++y) {
+        if (y >= same[tmp][1] - 5 && y <= same[tmp][2] + 5) {
+            continue;
+        }
+        uchar *data = g_edge.ptr<uchar>(y);
+        for (int x = 0; x < g_edge.cols; ++x) {
+            data[x] = 0;
+        }
+    }
+
+    // 计算长度
+    int width = same[tmp][0] * 3.14;
+
 
     cout << "rows: " << g_edge.rows << endl
          << "cols: " << g_edge.cols << endl;
 
-    imshow(WINDOW_NAME2, dstImage);
-
-//    // 查找轮廓
-//    vector<vector<Point> > contours;
-//    vector<Vec4i> hierarchy;
-//    findContours(g_edge, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
-
-//    vector<vector<Point> > contours_poly(contours.size());
-//    vector<Rect> boundRect(contours.size());
-
-//    Mat contoursImage = Mat::zeros(g_edge.rows, g_edge.cols, CV_8UC3);
-
-//    for (unsigned int i = 0; i < contours.size(); ++i) {
-//        approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
-//        boundRect[i] = boundingRect(Mat(contours_poly[i]));
-//    }
-
-//    int index = 0;
-//    for ( ; index >= 0; index = hierarchy[index][0]) {
-//        Scalar color(255, 255, 255);
-//        drawContours(contoursImage, contours, index, color, FILLED, LINE_AA, hierarchy);
-//        rectangle(contoursImage, boundRect[index].tl(), boundRect[index].br(), color, 1, 8, 0);
-//    }
-//    cout << "contours.size: " << contours.size() << endl
-//         << "hierarchy.size: " << hierarchy.size() << endl;
-//    imshow(WINDOW_NAME2, contoursImage);
+    imshow(WINDOW_NAME2, g_edge);
 
 }
 
